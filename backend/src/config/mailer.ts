@@ -1,11 +1,13 @@
-import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
+import nodemailer from "nodemailer";
+import dotenv from "dotenv";
 
 dotenv.config();
-
+// Check if env variables are loaded correctly
+console.log("EMAIL_USER:", process.env.EMAIL_USER);
+console.log("EMAIL_PASS:", process.env.EMAIL_PASS);
 // Create transporter for Gmail SMTP
-const transporter = nodemailer.createTransporter({
-  service: 'gmail',
+const transporter = nodemailer.createTransport({
+  service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -15,9 +17,9 @@ const transporter = nodemailer.createTransporter({
 // Verify transporter configuration
 transporter.verify((error, success) => {
   if (error) {
-    console.error('Email transporter configuration error:', error);
+    console.error("Email transporter configuration error:", error);
   } else {
-    console.log('Email transporter is ready to send messages');
+    console.log("Email transporter is ready to send messages");
   }
 });
 
@@ -26,14 +28,14 @@ export const sendVerificationEmail = async (
   verificationToken: string
 ): Promise<void> => {
   const verificationUrl = `${process.env.BASE_URL}/api/auth/verify/${verificationToken}`;
-  
+
   const mailOptions = {
     from: {
-      name: 'MediTrack',
+      name: "MediTrack",
       address: process.env.EMAIL_USER!,
     },
     to: email,
-    subject: 'Verify Your MediTrack Account',
+    subject: "Verify Your MediTrack Account",
     html: `
       <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
         <div style="text-align: center; margin-bottom: 30px;">
@@ -76,8 +78,8 @@ export const sendVerificationEmail = async (
     await transporter.sendMail(mailOptions);
     console.log(`Verification email sent to ${email}`);
   } catch (error) {
-    console.error('Error sending verification email:', error);
-    throw new Error('Failed to send verification email');
+    console.error("Error sending verification email:", error);
+    throw new Error("Failed to send verification email");
   }
 };
 

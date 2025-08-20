@@ -1,12 +1,12 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema } from "mongoose";
 
 export interface IPatient extends Document {
   name: string;
   email: string;
   password: string;
   isVerified: boolean;
-  verificationToken?: string;
-  verificationTokenExpires?: Date;
+  verificationToken: string | undefined;
+  verificationTokenExpires: Date | undefined;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,26 +15,26 @@ const PatientSchema: Schema = new Schema(
   {
     name: {
       type: String,
-      required: [true, 'Name is required'],
+      required: [true, "Name is required"],
       trim: true,
-      minlength: [2, 'Name must be at least 2 characters long'],
-      maxlength: [50, 'Name cannot exceed 50 characters'],
+      minlength: [2, "Name must be at least 2 characters long"],
+      maxlength: [50, "Name cannot exceed 50 characters"],
     },
     email: {
       type: String,
-      required: [true, 'Email is required'],
+      required: [true, "Email is required"],
       unique: true,
       lowercase: true,
       trim: true,
       match: [
         /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
-        'Please enter a valid email address',
+        "Please enter a valid email address",
       ],
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
-      minlength: [6, 'Password must be at least 6 characters long'],
+      required: [true, "Password is required"],
+      minlength: [6, "Password must be at least 6 characters long"],
     },
     isVerified: {
       type: Boolean,
@@ -67,4 +67,5 @@ PatientSchema.methods.toJSON = function () {
   return patient;
 };
 
-export default mongoose.model<IPatient>('Patient', PatientSchema);
+const Patient = mongoose.model<IPatient>("Patient", PatientSchema);
+export default Patient;
