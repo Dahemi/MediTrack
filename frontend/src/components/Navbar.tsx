@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import Logo from "./logo";
 
 const Navbar: React.FC = () => {
@@ -33,17 +34,20 @@ const Navbar: React.FC = () => {
             >
               Pricing
             </a>
-            <a
-              href="#login"
+            <Link
+              to="/login"
               className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
             >
               Login
-            </a>
+            </Link>
           </div>
 
-          <button className="bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors shadow-md hover:shadow-lg">
+          <Link
+            to="/register"
+            className="bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors shadow-md hover:shadow-lg"
+          >
             Sign Up Free
-          </button>
+          </Link>
         </div>
       </div>
     </nav>
