@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import Patient, { IPatient } from '../models/Patient.js';
-import { sendVerificationEmail } from '../config/mailer.js';
+import Patient, { IPatient } from '../models/Patient';
+import { sendVerificationEmail } from '../config/mailer';
 
 // Register a new patient
 export const signup = async (req: Request, res: Response): Promise<void> => {
