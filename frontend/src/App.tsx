@@ -10,10 +10,14 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Admin Routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/verify/:token" element={<Verify />} />
+
+        {/* User Routes */}
+        <Route path="/user/home" element={<HomePage />} />
       </Routes>
     </Router>
   );

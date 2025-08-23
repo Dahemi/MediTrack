@@ -3,10 +3,19 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
+import app from './app.js';
 
 dotenv.config();
 
-const app = express();
+const PORT = process.env.PORT || 5000;
+const MONGO_URI =
+  process.env.MONGO_URI || "mongodb://localhost:27017/meditrack";
+
+// Connect to MongoDB
+mongoose
+  .connect(MONGO_URI)
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
 // CORS middleware
 app.use(
@@ -22,16 +31,6 @@ app.use(
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-const PORT = process.env.PORT || 5000;
-const MONGO_URI =
-  process.env.MONGO_URI || "mongodb://localhost:27017/meditrack";
-
-// Connect to MongoDB
-mongoose
-  .connect(MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB connection error:", err));
 
 // Routes
 app.use("/api/auth", authRoutes);
