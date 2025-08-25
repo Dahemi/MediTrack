@@ -1,10 +1,11 @@
 import { Schema, model, Document } from "mongoose";
+//import { User } from "./user.model.js";
 
 export interface IAppointment extends Document {
   patientId: Schema.Types.ObjectId;
   doctorId: Schema.Types.ObjectId;
-  date: string; // could also be Date if you want strict date handling
-  time: string; // storing separately in HH:mm format
+  date: string; 
+  time: string; 
   status: "booked" | "in_session" | "completed" | "cancelled";
   queueNumber: number;
   notes?: string;
@@ -27,7 +28,7 @@ const appointmentSchema = new Schema<IAppointment>(
     notes: { type: String },
   },
   {
-    timestamps: true, // automatically manages createdAt & updatedAt
+    timestamps: true, 
   }
 );
 

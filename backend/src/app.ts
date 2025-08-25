@@ -1,17 +1,32 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import appointmentRoutes from "./routes/appointment.routes.js";
+import authRoutes from "./routes/authRoutes.js";
 
 const app: Express = express();
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      process.env.FRONTEND_URL || "http://localhost:5173",
+    ],
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use("/api/appointment", appointmentRoutes);
+app.use("/api/auth", authRoutes);
 
+// Health check
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok", message: "Backend is running!" });
+});
 
 // Error handling
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

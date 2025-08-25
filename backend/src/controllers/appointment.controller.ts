@@ -110,3 +110,43 @@ export const deleteAppointment = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Error deleting appointment", error });
   }
 };
+
+// Book a new appointment
+export const bookAppointment = async (req: Request, res: Response) => {
+  try {
+    const { patientId, doctorId, date, time, queueNumber, notes } = req.body;
+
+    // Check if slot is already booked
+    const existing = await Appointment.findOne({ doctorId, date, time });
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: "This time slot is already booked for the doctor.",
+      });
+    }
+
+    // Create new appointment
+    const appointment = new Appointment({
+      patientId,
+      doctorId,
+      date,
+      time,
+      queueNumber,
+      notes,
+    });
+
+    await appointment.save();
+
+    return res.status(201).json({
+      success: true,
+      message: "Appointment booked successfully.",
+      data: appointment,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Error booking appointment",
+      error: error.message,
+    });
+  }
+};
