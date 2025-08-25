@@ -1,11 +1,30 @@
 import { Request, Response } from "express";
 import { Appointment } from "../models/appointment.model.js";
 
-// Create new appointment
+// ✅ Create new appointment (with conflict checking)
 export const createAppointment = async (req: Request, res: Response) => {
   try {
     const { patientId, doctorId, date, time, queueNumber, notes } = req.body;
 
+    //  Check if doctor already has an appointment at this date & time
+    const existingDoctor = await Appointment.findOne({ doctorId, date, time });
+    if (existingDoctor) {
+      return res.status(400).json({
+        success: false,
+        message: "This time slot is already booked for the doctor.",
+      });
+    }
+
+    // (Optional) Check if patient already has appointment at same time
+    const existingPatient = await Appointment.findOne({ patientId, date, time });
+    if (existingPatient) {
+      return res.status(400).json({
+        success: false,
+        message: "Patient already has another appointment at this time.",
+      });
+    }
+
+    //  Save new appointment
     const appointment = await Appointment.create({
       patientId,
       doctorId,
@@ -16,13 +35,21 @@ export const createAppointment = async (req: Request, res: Response) => {
       status: "booked",
     });
 
-    return res.status(201).json(appointment);
-  } catch (error) {
-    return res.status(500).json({ message: "Error creating appointment", error });
+    return res.status(201).json({
+      success: true,
+      message: "Appointment booked successfully.",
+      data: appointment,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Error creating appointment",
+      error: error.message,
+    });
   }
 };
 
-// Get all appointments
+// ✅ Get all appointments
 export const getAppointments = async (_req: Request, res: Response) => {
   try {
     const appointments = await Appointment.find()
@@ -35,7 +62,7 @@ export const getAppointments = async (_req: Request, res: Response) => {
   }
 };
 
-// Get appointment by ID
+// ✅ Get appointment by ID
 export const getAppointmentById = async (req: Request, res: Response) => {
   try {
     const appointment = await Appointment.findById(req.params.id)
@@ -52,7 +79,7 @@ export const getAppointmentById = async (req: Request, res: Response) => {
   }
 };
 
-// Update appointment
+// ✅ Update appointment
 export const updateAppointment = async (req: Request, res: Response) => {
   try {
     const appointment = await Appointment.findByIdAndUpdate(
@@ -71,7 +98,7 @@ export const updateAppointment = async (req: Request, res: Response) => {
   }
 };
 
-// Update status only
+// ✅ Update status only
 export const updateAppointmentStatus = async (req: Request, res: Response) => {
   try {
     const { status } = req.body;
@@ -96,7 +123,7 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
   }
 };
 
-// Delete appointment
+// ✅ Delete appointment
 export const deleteAppointment = async (req: Request, res: Response) => {
   try {
     const appointment = await Appointment.findByIdAndDelete(req.params.id);
@@ -108,45 +135,5 @@ export const deleteAppointment = async (req: Request, res: Response) => {
     return res.status(200).json({ message: "Appointment deleted successfully" });
   } catch (error) {
     return res.status(500).json({ message: "Error deleting appointment", error });
-  }
-};
-
-// Book a new appointment
-export const bookAppointment = async (req: Request, res: Response) => {
-  try {
-    const { patientId, doctorId, date, time, queueNumber, notes } = req.body;
-
-    // Check if slot is already booked
-    const existing = await Appointment.findOne({ doctorId, date, time });
-    if (existing) {
-      return res.status(400).json({
-        success: false,
-        message: "This time slot is already booked for the doctor.",
-      });
-    }
-
-    // Create new appointment
-    const appointment = new Appointment({
-      patientId,
-      doctorId,
-      date,
-      time,
-      queueNumber,
-      notes,
-    });
-
-    await appointment.save();
-
-    return res.status(201).json({
-      success: true,
-      message: "Appointment booked successfully.",
-      data: appointment,
-    });
-  } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Error booking appointment",
-      error: error.message,
-    });
   }
 };
