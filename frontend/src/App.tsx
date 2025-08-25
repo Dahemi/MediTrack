@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Verify from "./pages/Verify";
 import CreateAppointment from "./components/CreateAppointment";
 import AppointmentConfirmation from "./components/AppointmentConfirmation";
+import AdminDashboard from "./components/admin/AdminDashboard";
 import "./App.css";
 
 function App() {
@@ -17,11 +18,10 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/verify/:token" element={<Verify />} />
+        <Route path="/admin/*" element={<AdminDashboard />} />
 
         {/* User Routes */}
         <Route path="/user/home" element={<HomePage />} />
-        
-        {/* Appointment Routes */}
         <Route path="/appointment/create" element={<CreateAppointment />} />
         <Route path="/appointment/confirmation" element={<AppointmentConfirmation />} />
       </Routes>
