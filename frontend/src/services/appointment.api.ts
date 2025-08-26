@@ -21,9 +21,16 @@ export interface AppointmentData {
 export const getAppointments = async (): Promise<AppointmentData[]> => {
   try {
     const response = await api.get('/appointment');
+    if (!response.data) {
+      throw new Error('No data received from server');
+    }
     return response.data;
   } catch (error: any) {
-    throw error.response?.data || { success: false, message: 'Network error occurred' };
+    console.error('Error fetching appointments:', error);
+    throw error.response?.data || { 
+      success: false, 
+      message: 'Failed to fetch appointments' 
+    };
   }
 };
 

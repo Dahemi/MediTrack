@@ -4,8 +4,8 @@ import HomePage from "./components/Home";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Verify from "./pages/Verify";
-import CreateAppointment from "./components/CreateAppointment";
-import AppointmentConfirmation from "./components/AppointmentConfirmation";
+import CreateAppointment from "./components/user/CreateAppointment";
+import AppointmentConfirmation from "./components/user/AppointmentConfirmation";
 import AdminDashboard from "./components/admin/AdminDashboard";
 import "./App.css";
 
