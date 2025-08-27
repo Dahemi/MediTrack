@@ -4,6 +4,9 @@ import HomePage from "./components/Home";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Verify from "./pages/Verify";
+import CreateAppointment from "./components/user/CreateAppointment";
+import AppointmentConfirmation from "./components/user/AppointmentConfirmation";
+import AdminDashboard from "./components/admin/AdminDashboard";
 import "./App.css";
 import DoctorManagement from "./pages/DoctorManagement";
 import DoctorsDirectory from "./pages/DoctorsDirectory";
@@ -12,12 +15,19 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Admin Routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/verify/:token" element={<Verify />} />
         <Route path="/doctors" element={<DoctorManagement />} />
         <Route path="/doctorsdir" element={<DoctorsDirectory />} />
+        <Route path="/admin/*" element={<AdminDashboard />} />
+
+        {/* User Routes */}
+        <Route path="/user/home" element={<HomePage />} />
+        <Route path="/appointment/create" element={<CreateAppointment />} />
+        <Route path="/appointment/confirmation" element={<AppointmentConfirmation />} />
       </Routes>
     </Router>
   );

@@ -55,7 +55,7 @@ const PatientSchema: Schema = new Schema(
 );
 
 // Index for faster email lookups
-PatientSchema.index({ email: 1 });
+//PatientSchema.index({ email: 1 });
 PatientSchema.index({ verificationToken: 1 });
 
 // Remove password from JSON output
