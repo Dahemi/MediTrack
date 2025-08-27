@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { registerPatient, type RegisterData } from "../services/api";
+import { registerPatient, type RegisterData } from "../../services/api";
 import { Link } from "react-router-dom";
 
 // Validation schema

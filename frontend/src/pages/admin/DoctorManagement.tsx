@@ -6,8 +6,8 @@ import {
   getDoctors,
   updateDoctor,
   deleteDoctor,
-} from "../services/api";
-import type { DoctorData, DoctorAvailability } from "../services/api";
+} from "../../services/api";
+import type { DoctorData, DoctorAvailability } from "../../services/api";
 
 const doctorValidationSchema = Yup.object({
   fullName: Yup.string().required("Full name is required"),

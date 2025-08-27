@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { getDoctors } from "../services/api";
-import type { DoctorData} from "../services/api";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer"; // Create this if not present
+import { getDoctors } from "../../services/api";
+import type { DoctorData} from "../../services/api";
+import Navbar from "../../components/user/Navbar";
+import Footer from "../../components/Footer"; // Create this if not present
 
 const DoctorsDirectory: React.FC = () => {
   const [doctors, setDoctors] = useState<DoctorData[]>([]);
