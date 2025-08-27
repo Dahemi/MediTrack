@@ -45,6 +45,7 @@ export interface LoginData {
 }
 
 export interface ApiResponse<T = any> {
+  doctors: never[];
   success: boolean;
   message: string;
   data?: T;
@@ -57,6 +58,27 @@ export interface PatientData {
   isVerified: boolean;
 }
 
+// Doctor Types
+export interface DoctorAvailability {
+  day: string;
+  date: string; // ISO string
+  startTime: string;
+  endTime: string;
+  slots: number;
+}
+
+export interface DoctorData {
+  _id?: string;
+  fullName: string;
+  specialization: string;
+  yearsOfExperience: number;
+  contactDetails: {
+    email: string;
+    phone: string;
+  };
+  profilePictureUrl?: string;
+  availability: DoctorAvailability[];
+}
 // API Functions
 export const registerPatient = async (data: RegisterData): Promise<ApiResponse<{ patient: PatientData }>> => {
   try {
@@ -88,6 +110,43 @@ export const loginPatient = async (data: LoginData): Promise<ApiResponse<{ patie
 export const resendVerification = async (email: string): Promise<ApiResponse> => {
   try {
     const response = await api.post('/auth/resend-verification', { email });
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || { success: false, message: 'Network error occurred' };
+  }
+};
+
+// Doctor API
+export const createDoctor = async (data: DoctorData): Promise<ApiResponse<{ doctor: DoctorData }>> => {
+  try {
+    const response = await api.post('/doctors', data);
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || { success: false, message: 'Network error occurred' };
+  }
+};
+
+export const getDoctors = async (): Promise<ApiResponse<{ doctors: DoctorData[] }>> => {
+  try {
+    const response = await api.get('/doctors');
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || { success: false, message: 'Network error occurred' };
+  }
+};
+
+export const updateDoctor = async (id: string, data: DoctorData): Promise<ApiResponse<{ doctor: DoctorData }>> => {
+  try {
+    const response = await api.put(`/doctors/${id}`, data);
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || { success: false, message: 'Network error occurred' };
+  }
+};
+
+export const deleteDoctor = async (id: string): Promise<ApiResponse> => {
+  try {
+    const response = await api.delete(`/doctors/${id}`);
     return response.data;
   } catch (error: any) {
     throw error.response?.data || { success: false, message: 'Network error occurred' };

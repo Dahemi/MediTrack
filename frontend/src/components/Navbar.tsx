@@ -17,6 +17,12 @@ const Navbar: React.FC = () => {
               Home
             </a>
             <a
+              href="/doctorsdir"
+              className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+            >
+              Doctors
+            </a>
+            <a
               href="#features"
               className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
             >
