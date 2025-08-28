@@ -1,9 +1,9 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import HomePage from "./components/Home";
-import Register from "./pages/Register";
-import Login from "./pages/Login";
-import Verify from "./pages/Verify";
+import Register from "./pages/user/Register";
+import Login from "./pages/user/Login";
+import Verify from "./pages/user/Verify";
 import CreateAppointment from "./components/user/CreateAppointment";
 import AppointmentConfirmation from "./components/user/AppointmentConfirmation";
 import AdminDashboard from "./components/admin/AdminDashboard";
@@ -23,7 +23,10 @@ function App() {
         {/* User Routes */}
         <Route path="/user/home" element={<HomePage />} />
         <Route path="/appointment/create" element={<CreateAppointment />} />
-        <Route path="/appointment/confirmation" element={<AppointmentConfirmation />} />
+        <Route
+          path="/appointment/confirmation"
+          element={<AppointmentConfirmation />}
+        />
       </Routes>
     </Router>
   );

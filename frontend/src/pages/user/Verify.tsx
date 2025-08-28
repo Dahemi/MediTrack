@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { verifyPatient } from '../services/api';
+import React, { useEffect, useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import { verifyPatient } from "../../services/api";
 
 const Verify: React.FC = () => {
   const { token } = useParams<{ token: string }>();
@@ -12,7 +12,7 @@ const Verify: React.FC = () => {
   }>({
     loading: true,
     success: false,
-    message: '',
+    message: "",
   });
 
   useEffect(() => {
@@ -21,7 +21,8 @@ const Verify: React.FC = () => {
         setVerificationStatus({
           loading: false,
           success: false,
-          message: 'Invalid verification link. Please check your email and try again.',
+          message:
+            "Invalid verification link. Please check your email and try again.",
         });
         return;
       }
@@ -31,14 +32,17 @@ const Verify: React.FC = () => {
         setVerificationStatus({
           loading: false,
           success: true,
-          message: response.message || 'Your account has been verified successfully!',
+          message:
+            response.message || "Your account has been verified successfully!",
           patientName: response.data?.patient?.name,
         });
       } catch (error: any) {
         setVerificationStatus({
           loading: false,
           success: false,
-          message: error.message || 'Verification failed. The link may be invalid or expired.',
+          message:
+            error.message ||
+            "Verification failed. The link may be invalid or expired.",
         });
       }
     };
@@ -54,8 +58,12 @@ const Verify: React.FC = () => {
             <div className="flex justify-center mb-6">
               <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Verifying Your Account</h2>
-            <p className="text-gray-600">Please wait while we verify your email address...</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Verifying Your Account
+            </h2>
+            <p className="text-gray-600">
+              Please wait while we verify your email address...
+            </p>
           </div>
         </div>
       </div>
@@ -115,21 +123,27 @@ const Verify: React.FC = () => {
 
           {/* Status Message */}
           <div className="mb-8">
-            <h2 className={`text-2xl font-bold mb-3 ${
-              verificationStatus.success ? 'text-green-800' : 'text-red-800'
-            }`}>
-              {verificationStatus.success ? 'Email Verified!' : 'Verification Failed'}
+            <h2
+              className={`text-2xl font-bold mb-3 ${
+                verificationStatus.success ? "text-green-800" : "text-red-800"
+              }`}
+            >
+              {verificationStatus.success
+                ? "Email Verified!"
+                : "Verification Failed"}
             </h2>
-            
+
             {verificationStatus.success && verificationStatus.patientName && (
               <p className="text-lg text-gray-700 mb-2">
                 Welcome, {verificationStatus.patientName}!
               </p>
             )}
-            
-            <p className={`text-sm ${
-              verificationStatus.success ? 'text-gray-600' : 'text-red-600'
-            }`}>
+
+            <p
+              className={`text-sm ${
+                verificationStatus.success ? "text-gray-600" : "text-red-600"
+              }`}
+            >
               {verificationStatus.message}
             </p>
           </div>
@@ -172,11 +186,9 @@ const Verify: React.FC = () => {
           {/* Help Text */}
           <div className="mt-8 pt-6 border-t border-gray-200">
             <p className="text-xs text-gray-500">
-              {verificationStatus.success ? (
-                'Your account is now active and ready to use.'
-              ) : (
-                'Need help? Contact our support team or try requesting a new verification email.'
-              )}
+              {verificationStatus.success
+                ? "Your account is now active and ready to use."
+                : "Need help? Contact our support team or try requesting a new verification email."}
             </p>
           </div>
         </div>

@@ -5,7 +5,7 @@ import {
   loginPatient,
   resendVerification,
   type LoginData,
-} from "../services/api";
+} from "../../services/api";
 import { Link } from "react-router-dom";
 
 // Validation schema
