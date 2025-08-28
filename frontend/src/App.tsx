@@ -8,6 +8,8 @@ import CreateAppointment from "./components/user/CreateAppointment";
 import AppointmentConfirmation from "./components/user/AppointmentConfirmation";
 import AdminDashboard from "./components/admin/AdminDashboard";
 import "./App.css";
+import DoctorManagement from "./pages/admin/DoctorManagement";
+import DoctorsDirectory from "./pages/user/DoctorsDirectory";
 
 function App() {
   return (
@@ -18,6 +20,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/verify/:token" element={<Verify />} />
+        <Route path="/doctors" element={<DoctorManagement />} />
         <Route path="/admin/*" element={<AdminDashboard />} />
 
         {/* User Routes */}
@@ -27,6 +30,7 @@ function App() {
           path="/appointment/confirmation"
           element={<AppointmentConfirmation />}
         />
+        <Route path="/doctorsdir" element={<DoctorsDirectory />} />
       </Routes>
     </Router>
   );

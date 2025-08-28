@@ -1,11 +1,7 @@
 import React, { useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import {
-  loginPatient,
-  resendVerification,
-  type LoginData,
-} from "../../services/api";
+import { loginPatient, resendVerification } from "../../services/api";
 import { Link } from "react-router-dom";
 
 // Validation schema
@@ -17,6 +13,11 @@ const validationSchema = Yup.object({
     .min(6, "Password must be at least 6 characters")
     .required("Password is required"),
 });
+
+type LoginData = {
+  email: string;
+  password: string;
+};
 
 const Login: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
