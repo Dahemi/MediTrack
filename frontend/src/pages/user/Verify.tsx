@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { verifyPatient } from '../services/api';
+import { verifyPatient } from '../../services/api';
 
 const Verify: React.FC = () => {
   const { token } = useParams<{ token: string }>();
