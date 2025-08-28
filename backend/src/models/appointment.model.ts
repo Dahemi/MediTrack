@@ -1,6 +1,11 @@
 import { Schema, model, Document } from "mongoose";
 //import { User } from "./user.model.js";
 
+interface IRescheduleHistory {
+  date: string;
+  time: string;
+}
+
 export interface IAppointment extends Document {
   patientId: Schema.Types.ObjectId;
   doctorId: Schema.Types.ObjectId;
@@ -11,6 +16,16 @@ export interface IAppointment extends Document {
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
+
+  // Cancellation fields
+  cancellationReason?: string;
+  cancelledBy?: 'patient' | 'doctor';
+  cancelledAt?: Date;
+  
+  // Rescheduling fields
+  rescheduledFrom?: IRescheduleHistory;
+  rescheduledReason?: string;
+  rescheduledAt?: Date;
 }
 
 const appointmentSchema = new Schema<IAppointment>(
@@ -26,6 +41,22 @@ const appointmentSchema = new Schema<IAppointment>(
     },
     queueNumber: { type: Number, required: true },
     notes: { type: String },
+
+    // Cancellation fields
+    cancellationReason: { type: String },
+    cancelledBy: { 
+      type: String,
+      enum: ['patient', 'doctor']
+    },
+    cancelledAt: { type: Date },
+    
+    // Rescheduling fields
+    rescheduledFrom: {
+      date: String,
+      time: String
+    },
+    rescheduledReason: { type: String },
+    rescheduledAt: { type: Date }
   },
   {
     timestamps: true, 

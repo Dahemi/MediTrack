@@ -5,6 +5,8 @@ import {
   getAppointmentById,
   updateAppointment,
   deleteAppointment,
+  cancelAppointment,
+  rescheduleAppointment,
 } from "../controllers/appointment.controller.js";
 const router: Router = express.Router();
 
@@ -18,6 +20,10 @@ router.get("/:id", getAppointmentById);
 router.put("/:id", updateAppointment);
 // Delete appointment
 router.delete("/:id", deleteAppointment);
+// Cancel appointment
+router.post('/:id/cancel', cancelAppointment);
+// Reschedule appointment
+router.post('/:id/reschedule', rescheduleAppointment);
 
 
 export default router;
