@@ -26,7 +26,10 @@ function App() {
         {/* User Routes */}
         <Route path="/user/home" element={<HomePage />} />
         <Route path="/appointment/create" element={<CreateAppointment />} />
-        <Route path="/appointment/confirmation" element={<AppointmentConfirmation />} />
+        <Route
+          path="/appointment/confirmation"
+          element={<AppointmentConfirmation />}
+        />
         <Route path="/doctorsdir" element={<DoctorsDirectory />} />
       </Routes>
     </Router>
