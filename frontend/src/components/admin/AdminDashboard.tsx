@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import AppointmentsPage from '../../pages/admin/appointment';
+import DoctorManagement from "../../pages/admin/DoctorManagement";
 
 // Mock user data (replace with actual auth data)
 const user = {
@@ -22,7 +23,7 @@ const AdminDashboard: React.FC = () => {
           <Routes>
             <Route path="/" element={<Overview />} />
             <Route path="/appointments" element={<AppointmentsPage />} />
-            <Route path="/doctors" element={<Doctors />} />
+            <Route path="/doctors" element={<DoctorManagement />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
