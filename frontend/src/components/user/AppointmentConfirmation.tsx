@@ -1,6 +1,10 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import { getCurrentUser } from '../../services/api';
+import type { UserData } from '../../services/api';
+import PatientSidebar from './PatientSidebar';
+import PatientHeader from './PatientHeader';
 
 interface AppointmentData {
   _id: string;
@@ -23,19 +27,40 @@ const AppointmentConfirmation: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const appointment = location.state?.appointment as AppointmentData;
+  const [user, setUser] = React.useState<UserData | null>(null);
+
+  React.useEffect(() => {
+    const currentUser = getCurrentUser();
+    setUser(currentUser);
+    
+    console.log('=== APPOINTMENT CONFIRMATION MOUNTED ===');
+    console.log('Location state:', location.state);
+    console.log('Appointment data:', appointment);
+    console.log('Current user:', currentUser);
+  }, [location.state, appointment]);
 
   if (!appointment) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow-xl border border-gray-100">
-          <h2 className="text-xl font-semibold text-red-600 mb-4">Error</h2>
-          <p className="text-gray-600">No appointment data found.</p>
-          <button
-            onClick={() => navigate('/appointments')}
-            className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Back to Appointments
-          </button>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50">
+        <div className="flex h-screen">
+          <PatientSidebar />
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <PatientHeader user={user || undefined} />
+            <div className="flex-1 overflow-y-auto p-8">
+              <div className="max-w-2xl mx-auto">
+                <div className="bg-white p-8 rounded-lg shadow-xl border border-gray-100">
+                  <h2 className="text-xl font-semibold text-red-600 mb-4">Error</h2>
+                  <p className="text-gray-600">No appointment data found.</p>
+                  <button
+                    onClick={() => navigate('/patient/appointments')}
+                    className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Back to Appointments
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -44,99 +69,109 @@ const AppointmentConfirmation: React.FC = () => {
   const formattedDate = format(new Date(appointment.date), 'MMMM d, yyyy');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-              <svg 
-                className="w-6 h-6 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path 
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50">
+      <div className="flex h-screen">
+        <PatientSidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <PatientHeader user={user || undefined} />
+          <div className="flex-1 overflow-y-auto p-8">
+            <div className="max-w-2xl mx-auto">
+              <div className="bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                      <svg 
+                        className="w-6 h-6 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path 
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h1 className="text-white text-xl font-semibold">Appointment Confirmed!</h1>
+                      <p className="text-blue-100">Your appointment has been successfully scheduled</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 space-y-6">
+                  {/* Appointment Details */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Doctor</p>
+                        <p className="font-semibold text-gray-900">{appointment.doctorId.name}</p>
+                        <p className="text-sm text-gray-600">{appointment.doctorId.specialization}</p>
+                      </div>
+                      <div className="text-right space-y-1">
+                        <p className="text-sm text-gray-500">Queue Number</p>
+                        <p className="text-2xl font-bold text-blue-600">#{appointment.queueNumber}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Date</p>
+                        <p className="font-semibold text-gray-900">{formattedDate}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Time</p>
+                        <p className="font-semibold text-gray-900">{appointment.time}</p>
+                      </div>
+                    </div>
+
+                    {appointment.notes && (
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-500">Notes</p>
+                        <p className="text-gray-600 bg-gray-50 p-3 rounded-lg">{appointment.notes}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Status Badge */}
+                  <div className="flex justify-center">
+                    <span className="px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                      {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                    </span>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="space-y-4">
+                    <button
+                      onClick={() => {/* Add to calendar logic */}}
+                      className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span>Add to Calendar</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => navigate('/patient/appointments')}
+                      className="w-full border-2 border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all"
+                    >
+                      View All Appointments
+                    </button>
+                  </div>
+
+                  {/* Additional Info */}
+                  <div className="text-center text-sm text-gray-500">
+                    <p>A confirmation email has been sent to {appointment.patientId.email}</p>
+                    <p className="mt-1">Please arrive 10 minutes before your scheduled time</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div>
-              <h1 className="text-white text-xl font-semibold">Appointment Confirmed!</h1>
-              <p className="text-blue-100">Your appointment has been successfully scheduled</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-6">
-          {/* Appointment Details */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-4 border-b border-gray-100">
-              <div className="space-y-1">
-                <p className="text-sm text-gray-500">Doctor</p>
-                <p className="font-semibold text-gray-900">{appointment.doctorId.name}</p>
-                <p className="text-sm text-gray-600">{appointment.doctorId.specialization}</p>
-              </div>
-              <div className="text-right space-y-1">
-                <p className="text-sm text-gray-500">Queue Number</p>
-                <p className="text-2xl font-bold text-blue-600">#{appointment.queueNumber}</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <p className="text-sm text-gray-500">Date</p>
-                <p className="font-semibold text-gray-900">{formattedDate}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-gray-500">Time</p>
-                <p className="font-semibold text-gray-900">{appointment.time}</p>
-              </div>
-            </div>
-
-            {appointment.notes && (
-              <div className="space-y-1">
-                <p className="text-sm text-gray-500">Notes</p>
-                <p className="text-gray-600 bg-gray-50 p-3 rounded-lg">{appointment.notes}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Status Badge */}
-          <div className="flex justify-center">
-            <span className="px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-              {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-            </span>
-          </div>
-
-          {/* Actions */}
-          <div className="space-y-4">
-            <button
-              onClick={() => {/* Add to calendar logic */}}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span>Add to Calendar</span>
-            </button>
-            
-            <button
-              onClick={() => navigate('/appointments')}
-              className="w-full border-2 border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              View All Appointments
-            </button>
-          </div>
-
-          {/* Additional Info */}
-          <div className="text-center text-sm text-gray-500">
-            <p>A confirmation email has been sent to {appointment.patientId.email}</p>
-            <p className="mt-1">Please arrive 10 minutes before your scheduled time</p>
           </div>
         </div>
       </div>
