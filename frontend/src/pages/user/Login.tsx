@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { loginPatient, resendVerification } from "../../services/api";
-import { Link } from "react-router-dom";
+import { loginUser, resendVerification } from "../../services/api";
+import { Link, useNavigate } from "react-router-dom";
 
 // Validation schema
 const validationSchema = Yup.object({
@@ -20,6 +20,7 @@ type LoginData = {
 };
 
 const Login: React.FC = () => {
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResendingVerification, setIsResendingVerification] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<{
@@ -38,12 +39,27 @@ const Login: React.FC = () => {
     setSubmitStatus({ type: null, message: "" });
 
     try {
-      const response = await loginPatient(values);
+      const response = await loginUser(values);
 
       setSubmitStatus({
         type: "success",
-        message: `Welcome back, ${response.data?.patient?.name}! Login successful.`,
+        message: `Welcome back, ${response.data?.user?.name}! Login successful.`,
       });
+
+      // Redirect based on role after successful login
+      setTimeout(() => {
+        switch (response.data?.user?.role) {
+          case 'admin':
+            navigate('/admin');
+            break;
+          case 'doctor':
+          case 'patient':
+            navigate('/dashboard');
+            break;
+          default:
+            navigate('/dashboard');
+        }
+      }, 1500);
     } catch (error: any) {
       if (error.message?.includes("verify your email")) {
         setSubmitStatus({
@@ -88,22 +104,26 @@ const Login: React.FC = () => {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="relative">
-              <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">M</span>
-              </div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-teal-500 rounded-full"></div>
-            </div>
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+            </svg>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Sign in to your MediTrack account
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
+          <p className="text-gray-600 mb-6">Sign in to your MediTrack account</p>
+          <p className="text-sm text-gray-500">
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              className="font-semibold text-blue-600 hover:text-blue-500 transition-colors"
+            >
+              Create one here
+            </Link>
           </p>
         </div>
 
         {/* Login Form */}
-        <div className="bg-white py-8 px-6 shadow-xl rounded-lg border border-gray-100">
+        <div className="bg-white py-8 px-8 shadow-xl rounded-xl border border-gray-100">
           <Formik
             initialValues={initialValues}
             validationSchema={validationSchema}
@@ -115,15 +135,20 @@ const Login: React.FC = () => {
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-semibold text-gray-700 mb-2 flex items-center"
                   >
+                    <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+                      <svg className="w-2 h-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                      </svg>
+                    </div>
                     Email Address
                   </label>
                   <Field
                     id="email"
                     name="email"
                     type="email"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                     placeholder="Enter your email address"
                   />
                   <ErrorMessage
@@ -137,15 +162,20 @@ const Login: React.FC = () => {
                 <div>
                   <label
                     htmlFor="password"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-semibold text-gray-700 mb-2 flex items-center"
                   >
+                    <div className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center mr-2">
+                      <svg className="w-2 h-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </div>
                     Password
                   </label>
                   <Field
                     id="password"
                     name="password"
                     type="password"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                     placeholder="Enter your password"
                   />
                   <ErrorMessage
@@ -204,7 +234,7 @@ const Login: React.FC = () => {
                   className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all duration-200 ${
                     !isValid || !dirty || isSubmitting
                       ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                      : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
                   }`}
                 >
                   {isSubmitting ? (
