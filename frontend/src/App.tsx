@@ -10,6 +10,7 @@ import AdminDashboard from "./components/admin/AdminDashboard";
 import "./App.css";
 import DoctorManagement from "./pages/admin/DoctorManagement";
 import DoctorsDirectory from "./pages/user/DoctorsDirectory";
+import AvailableSlots from "./pages/user/AvailableSlots";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
           element={<AppointmentConfirmation />}
         />
         <Route path="/doctorsdir" element={<DoctorsDirectory />} />
+        <Route path="/doctors/:id/slots" element={<AvailableSlots />} />
       </Routes>
     </Router>
   );

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { getDoctors } from "../../services/api";
 import type { DoctorData} from "../../services/api";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/user/Navbar";
 import Footer from "../../components/Footer"; // Create this if not present
 
@@ -10,6 +11,7 @@ const DoctorsDirectory: React.FC = () => {
   const [specialization, setSpecialization] = useState("");
   const [filtered, setFiltered] = useState<DoctorData[]>([]);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setLoading(true);
@@ -112,6 +114,12 @@ const DoctorsDirectory: React.FC = () => {
                       : `Dedicated ${doc.specialization} with ${doc.yearsOfExperience} years of experience.`}
                   </div>
                 </div>
+                <button
+                    className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200"
+                    onClick={() => navigate(`/doctors/${doc._id}/slots`, { state: { doctor: doc } })}
+                  >
+                    View Available Slots
+                </button>
               </div>
             ))}
           </div>
