@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllUsers, updateUserRole, deleteUser, getCurrentUser } from '../../services/api';
+import { getAllUsers, updateUserRole, deleteUser, deleteDoctor, getDoctorByUserId, getCurrentUser } from '../../services/api';
 import type { UserManagementData, UserData } from '../../services/api';
 import Sidebar from '../../components/admin/Sidebar';
 import Header from '../../components/admin/Header';
+import DeleteConfirmationModal from '../../components/admin/DeleteConfirmationModal';
 
 const UserManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -11,8 +12,22 @@ const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<UserManagementData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Delete modal state
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    userId: string | null;
+    userName: string;
+    userRole: 'doctor' | 'patient' | 'admin';
+  }>({
+    isOpen: false,
+    userId: null,
+    userName: "",
+    userRole: 'patient',
+  });
 
   useEffect(() => {
     // Check authentication and role
@@ -31,9 +46,21 @@ const UserManagement: React.FC = () => {
     fetchUsers();
   }, [navigate]);
 
+  // Auto-clear success message after 5 seconds
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        setSuccess('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      setError(''); // Clear previous errors
+      setSuccess(''); // Clear previous success messages
       const response = await getAllUsers();
       setUsers(response.data?.users || []);
     } catch (err: any) {
@@ -52,17 +79,75 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!window.confirm('Are you sure you want to delete this user?')) {
-      return;
-    }
+  const handleDeleteUser = (userId: string, userName: string, userRole: 'doctor' | 'patient' | 'admin') => {
+    // Open the delete confirmation modal
+    setDeleteModal({
+      isOpen: true,
+      userId: userId,
+      userName: userName,
+      userRole: userRole,
+    });
+  };
 
+  const handleDeleteConfirm = async (deleteUserAccount?: boolean) => {
+    if (!deleteModal.userId) return;
+    
     try {
-      await deleteUser(userId);
+      if (deleteModal.userRole === 'doctor') {
+        // For doctors, we need to first get their doctor profile, then delete it
+        try {
+          // Get the doctor profile first
+          const doctorResponse = await getDoctorByUserId(deleteModal.userId);
+          if (doctorResponse.data?.doctor?._id) {
+            // Delete the doctor profile
+            const queryParams = deleteUserAccount ? '?deleteUser=true' : '';
+            await deleteDoctor(doctorResponse.data.doctor._id + queryParams);
+            
+            const message = deleteUserAccount 
+              ? "Doctor profile and user account deleted successfully" 
+              : "Doctor profile deleted successfully";
+            setError(''); // Clear any previous errors
+            setSuccess(message);
+          } else {
+            // No doctor profile found, just delete the user
+            await deleteUser(deleteModal.userId);
+            setError(''); // Clear any previous errors
+            setSuccess("User deleted successfully (no doctor profile found)");
+          }
+        } catch (profileError: any) {
+          // If getting doctor profile fails, just delete the user
+          await deleteUser(deleteModal.userId);
+          setError(''); // Clear any previous errors
+          setSuccess("User deleted successfully (doctor profile not accessible)");
+        }
+      } else {
+        // For patients and admins, just delete the user account
+        await deleteUser(deleteModal.userId);
+        setError(''); // Clear any previous errors
+        setSuccess("User deleted successfully");
+      }
+      
       fetchUsers(); // Refresh the list
     } catch (err: any) {
       setError(err.message || 'Failed to delete user');
+    } finally {
+      // Close the modal
+      setDeleteModal({
+        isOpen: false,
+        userId: null,
+        userName: "",
+        userRole: 'patient',
+      });
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModal({
+      isOpen: false,
+      userId: null,
+      userName: "",
+      userRole: 'patient',
+    });
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -238,6 +323,14 @@ const UserManagement: React.FC = () => {
                   </div>
                 )}
 
+                {/* Success Message */}
+                {success && (
+                  <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                    {success}
+                  </div>
+                )}
+
                 {/* Users Table */}
                 <div className="bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
                   <div className="px-6 py-4 border-b border-gray-100">
@@ -317,7 +410,7 @@ const UserManagement: React.FC = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <button
-                                onClick={() => handleDeleteUser(user._id)}
+                                onClick={() => handleDeleteUser(user._id, user.name, user.role as 'doctor' | 'patient' | 'admin')}
                                 className="text-red-600 hover:text-red-900 font-medium transition-colors"
                               >
                                 Delete
@@ -345,6 +438,18 @@ const UserManagement: React.FC = () => {
           </main>
         </div>
       </div>
+      
+      {/* Delete Confirmation Modal */}
+             <DeleteConfirmationModal
+         isOpen={deleteModal.isOpen}
+         onClose={handleDeleteCancel}
+         onConfirm={handleDeleteConfirm}
+         title="Delete User"
+         message="Choose deletion scope"
+         itemName={deleteModal.userName}
+         itemType="User"
+         userRole={deleteModal.userRole}
+       />
     </div>
   );
 };
