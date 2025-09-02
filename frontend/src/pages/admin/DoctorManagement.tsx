@@ -13,6 +13,8 @@ import {
 import type { DoctorData, DoctorAvailability, UserData, UserManagementData } from "../../services/api";
 import Sidebar from "../../components/admin/Sidebar";
 import Header from "../../components/admin/Header";
+import DeleteConfirmationModal from "../../components/admin/DeleteConfirmationModal";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 
 const doctorValidationSchema = Yup.object({
   fullName: Yup.string().required("Full name is required"),
@@ -57,6 +59,29 @@ const DoctorManagement: React.FC = () => {
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [status, setStatus] = useState<{ type: "success" | "error" | null; message: string }>({ type: null, message: "" });
   const [loading, setLoading] = useState(false);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  
+  // Delete modal state
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    doctorId: string | null;
+    doctorName: string;
+  }>({
+    isOpen: false,
+    doctorId: null,
+    doctorName: "",
+  });
+  
+  // Confirmation modal state for availability removal
+  const [confirmationModal, setConfirmationModal] = useState<{
+    isOpen: boolean;
+    message: string;
+    onConfirm: (() => void) | null;
+  }>({
+    isOpen: false,
+    message: "",
+    onConfirm: null,
+  });
 
   // Get selected user data for pre-filling form
   const selectedUser = usersWithDoctorRole.find(u => u._id === selectedUserId);
@@ -98,7 +123,6 @@ const DoctorManagement: React.FC = () => {
       const doctorsData = res.data?.doctors || [];
       setDoctors(doctorsData);
     } catch (e: any) {
-      console.error('Error fetching doctors:', e);
       setStatus({ type: "error", message: e.message });
     } finally {
       setLoading(false);
@@ -111,20 +135,52 @@ const DoctorManagement: React.FC = () => {
       const usersData = res.data?.users || [];
       setUsersWithDoctorRole(usersData);
     } catch (e: any) {
-      console.error('Error fetching users with doctor role:', e);
     }
   };
 
-  const handleDelete = async (id?: string) => {
+  const handleDelete = (id?: string, name?: string) => {
     if (!id) return;
-    if (!window.confirm("Are you sure you want to delete this doctor?")) return;
+    
+    // Open the delete confirmation modal
+    setDeleteModal({
+      isOpen: true,
+      doctorId: id,
+      doctorName: name || "this doctor",
+    });
+  };
+
+  const handleDeleteConfirm = async (deleteUser?: boolean) => {
+    if (!deleteModal.doctorId) return;
+    
     try {
-      await deleteDoctor(id);
-      setStatus({ type: "success", message: "Doctor deleted successfully" });
+      // Pass the deleteUser flag to the backend
+      const queryParams = deleteUser ? '?deleteUser=true' : '';
+      await deleteDoctor(deleteModal.doctorId + queryParams);
+      
+      const message = deleteUser 
+        ? "Doctor profile and user account deleted successfully" 
+        : "Doctor profile deleted successfully";
+      
+      setStatus({ type: "success", message });
       fetchDoctors();
     } catch (e: any) {
       setStatus({ type: "error", message: e.message });
+    } finally {
+      // Close the modal
+      setDeleteModal({
+        isOpen: false,
+        doctorId: null,
+        doctorName: "",
+      });
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModal({
+      isOpen: false,
+      doctorId: null,
+      doctorName: "",
+    });
   };
 
   // Helper to convert date fields to ISO string for backend
@@ -136,6 +192,36 @@ const DoctorManagement: React.FC = () => {
           date: a.date ? new Date(a.date).toISOString() : "",
       })),
     };
+  };
+
+  // Handle availability updates with auto-save
+  const handleAvailabilityUpdate = async (updatedValues: DoctorData, isEditing: boolean) => {
+    try {
+      setAvailabilityLoading(true);
+      setStatus({ type: null, message: "" });
+      
+      const normalized = normalizeDoctor(updatedValues);
+      
+      if (isEditing && editingDoctor?._id) {
+        // Update existing doctor
+        await updateDoctor(editingDoctor._id, normalized);
+        setStatus({ type: "success", message: "Availability updated successfully" });
+        
+        // Update the editing doctor state
+        setEditingDoctor(normalized);
+      } else if (selectedUserId) {
+        // Update the form values for new doctor creation
+        // This will be saved when the form is submitted
+        setStatus({ type: "success", message: "Availability updated in form" });
+      }
+      
+      // Refresh the doctors list to show updated data
+      await fetchDoctors();
+    } catch (e: any) {
+      setStatus({ type: "error", message: e.message || "Failed to update availability" });
+    } finally {
+      setAvailabilityLoading(false);
+    }
   };
 
   // Get users who need doctor profiles (users with doctor role but no verified doctor profile)
@@ -371,7 +457,6 @@ const DoctorManagement: React.FC = () => {
                      await fetchDoctors();
                      await fetchUsersWithDoctorRole();
                    } catch (e: any) {
-                     console.error("Error creating doctor:", e);
                      setStatus({ type: "error", message: e.message || "Failed to create doctor" });
                    }
                  }}
@@ -511,6 +596,12 @@ const DoctorManagement: React.FC = () => {
                                 </svg>
                           </div>
                               Availability Schedule
+                              {availabilityLoading && (
+                                <span className="ml-2 inline-flex items-center text-blue-600 text-xs">
+                                  <div className="animate-spin rounded-full h-3 w-3 border border-blue-600 border-t-transparent mr-1"></div>
+                                  Updating...
+                                </span>
+                              )}
                             </label>
                           <FieldArray name="availability">
                               {({ push, remove }) => (
@@ -586,16 +677,37 @@ const DoctorManagement: React.FC = () => {
                                                                          <div>
                                        <button 
                                          type="button" 
+                                         disabled={availabilityLoading}
                                          onClick={() => {
-                                              const dateStr = a.date ? new Date(a.date).toLocaleDateString() : 'this availability';
-                                              if (window.confirm(`Are you sure you want to remove ${dateStr}?`)) {
-                                                const newAvailability = values.availability.filter((_, index) => index !== idx);
-                                                setFieldValue('availability', newAvailability);
-                                              }
-                                            }} 
-                                            className="w-full px-3 py-2 text-red-600 hover:text-red-800 text-sm font-medium border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                                           const dateStr = a.date ? new Date(a.date).toLocaleDateString() : 'this availability';
+                                           setConfirmationModal({
+                                             isOpen: true,
+                                             message: `Are you sure you want to remove ${dateStr}?`,
+                                             onConfirm: () => {
+                                               const newAvailability = values.availability.filter((_, index) => index !== idx);
+                                               setFieldValue('availability', newAvailability);
+                                               
+                                               // Auto-save the changes immediately after removal
+                                               const updatedValues = {
+                                                 ...values,
+                                                 availability: newAvailability
+                                               };
+                                               
+                                               // Submit the availability update automatically
+                                               const isEditing = !!editingDoctor;
+                                               handleAvailabilityUpdate(updatedValues, isEditing);
+                                               
+                                               setConfirmationModal({
+                                                 isOpen: false,
+                                                 message: "",
+                                                 onConfirm: null,
+                                               });
+                                             },
+                                           });
+                                         }} 
+                                         className="w-full px-3 py-2 text-red-600 hover:text-red-800 text-sm font-medium border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                        >
-                                         Remove
+                                         {availabilityLoading ? 'Removing...' : 'Remove'}
                                        </button>
                                      </div>
                                   </div>
@@ -604,10 +716,24 @@ const DoctorManagement: React.FC = () => {
                                   {values.availability.length > 0 && (
                                 <button 
                                   type="button" 
-                                  onClick={() => push({ date: "", startTime: "", endTime: "" })} 
-                                      className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                  disabled={availabilityLoading}
+                                  onClick={() => {
+                                    const newSlot = { date: "", startTime: "", endTime: "" };
+                                    push(newSlot);
+                                    
+                                    // Auto-save after adding new availability slot
+                                    const updatedValues = {
+                                      ...values,
+                                      availability: [...values.availability, newSlot]
+                                    };
+                                    
+                                    // Submit the availability update automatically
+                                    const isEditing = !!editingDoctor;
+                                    handleAvailabilityUpdate(updatedValues, isEditing);
+                                  }} 
+                                      className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                  + Add Availability
+                                  {availabilityLoading ? 'Adding...' : '+ Add Availability'}
                                 </button>
                                   )}
                               </div>
@@ -712,12 +838,12 @@ const DoctorManagement: React.FC = () => {
                             >
                               Edit
                             </button>
-                            <button
-                              onClick={() => handleDelete(doc._id)}
-                                className="text-red-600 hover:text-red-900 font-medium transition-colors"
-                            >
-                              Delete
-                            </button>
+                                                         <button
+                               onClick={() => handleDelete(doc._id, doc.fullName)}
+                                 className="text-red-600 hover:text-red-900 font-medium transition-colors"
+                             >
+                               Delete
+                             </button>
                           </td>
                         </tr>
                       ))}
@@ -725,13 +851,40 @@ const DoctorManagement: React.FC = () => {
                   </table>
                 </div>
               )}
-            </div>
-          </div>
-        </main>
-        </div>
-      </div>
-    </div>
-  );
-};
+             </div>
+           </div>
+         </main>
+       </div>
+     </div>
+     
+     {/* Delete Confirmation Modal */}
+     <DeleteConfirmationModal
+       isOpen={deleteModal.isOpen}
+       onClose={handleDeleteCancel}
+       onConfirm={handleDeleteConfirm}
+       title="Delete Doctor"
+       message="Choose deletion scope"
+       itemName={deleteModal.doctorName}
+       itemType="Doctor"
+       userRole="doctor"
+     />
+     
+     {/* Confirmation Modal for availability removal */}
+     <ConfirmationModal
+       isOpen={confirmationModal.isOpen}
+       onClose={() => setConfirmationModal({
+         isOpen: false,
+         message: "",
+         onConfirm: null,
+       })}
+       onConfirm={() => confirmationModal.onConfirm?.()}
+       title="Confirm Removal"
+       message={confirmationModal.message}
+       confirmText="Remove"
+       confirmButtonClass="bg-red-600 hover:bg-red-700"
+     />
+   </div>
+   );
+ };
 
 export default DoctorManagement;

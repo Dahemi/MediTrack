@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Formik, Form, Field, FieldArray, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import { getMyDoctorProfile, updateMyDoctorProfile, getCurrentUser, debugGetAllDoctors, debugGetCurrentUser } from '../../services/api';
+import { getMyDoctorProfile, updateMyDoctorProfile, getCurrentUser } from '../../services/api';
 import type { DoctorData, DoctorAvailability } from '../../services/api';
 import DoctorSidebar from './DoctorSidebar';
 import DoctorHeader from './DoctorHeader';
+import ConfirmationModal from '../common/ConfirmationModal';
 
 const doctorValidationSchema = Yup.object({
   fullName: Yup.string().required("Full name is required"),
@@ -38,11 +39,22 @@ const DoctorProfile: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  
+  // Confirmation modal state
+  const [confirmationModal, setConfirmationModal] = useState<{
+    isOpen: boolean;
+    message: string;
+    onConfirm: (() => void) | null;
+  }>({
+    isOpen: false,
+    message: "",
+    onConfirm: null,
+  });
 
   useEffect(() => {
     // Check if user is a doctor
     const currentUser = getCurrentUser();
-    console.log('Current user:', currentUser);
     
     if (!currentUser) {
       navigate('/login');
@@ -50,24 +62,18 @@ const DoctorProfile: React.FC = () => {
     }
     
     if (currentUser.role !== 'doctor') {
-      console.log('User is not a doctor, role:', currentUser.role);
       navigate('/dashboard');
       return;
     }
-    
-    console.log('User is a doctor, fetching profile...');
     fetchDoctorProfile();
   }, [navigate]);
 
   const fetchDoctorProfile = async () => {
     try {
       setLoading(true);
-      console.log('Fetching doctor profile...');
       const response = await getMyDoctorProfile();
-      console.log('Doctor profile response:', response);
       setDoctor(response.data?.doctor || null);
     } catch (err: any) {
-      console.error('Error fetching doctor profile:', err);
       setError(err.message || 'Failed to fetch doctor profile');
     } finally {
       setLoading(false);
@@ -108,8 +114,35 @@ const DoctorProfile: React.FC = () => {
         setDoctor(response.data.doctor);
       }
     } catch (err: any) {
-      console.error("DoctorProfile update error:", err);
       setError(err.message || 'Failed to update profile');
+    }
+  };
+
+  const handleAvailabilityUpdate = async (updatedValues: DoctorData) => {
+    try {
+      setAvailabilityLoading(true);
+      setError('');
+      
+      // Convert date fields to ISO string for backend
+      const normalizedValues = {
+        ...updatedValues,
+        availability: updatedValues.availability.map((a) => ({
+          ...a,
+          date: a.date ? new Date(a.date).toISOString() : "",
+        })),
+      };
+
+      const response = await updateMyDoctorProfile(normalizedValues);
+      setSuccess('Availability updated successfully!');
+      
+      // Update the local state with the response data
+      if (response.data?.doctor) {
+        setDoctor(response.data.doctor);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to update availability');
+    } finally {
+      setAvailabilityLoading(false);
     }
   };
 
@@ -159,42 +192,6 @@ const DoctorProfile: React.FC = () => {
               </div>
             </div>
             
-            {/* Debug buttons */}
-            <div className="border-t border-gray-200 pt-6 mt-6">
-              <p className="text-sm text-gray-600 mb-3 font-medium">Debug Tools:</p>
-              <div className="space-x-3">
-                <button
-                  onClick={async () => {
-                    try {
-                      const result = await debugGetCurrentUser();
-                      console.log('Current user debug:', result);
-                      alert(`Current user: ${JSON.stringify(result.data, null, 2)}`);
-                    } catch (err: any) {
-                      console.error('Debug user error:', err);
-                      alert(`Error: ${err.message}`);
-                    }
-                  }}
-                  className="bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 text-white px-4 py-2 rounded-lg text-sm transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-                >
-                  Debug User
-                </button>
-                <button
-                  onClick={async () => {
-                    try {
-                      const result = await debugGetAllDoctors();
-                      console.log('All doctors debug:', result);
-                      alert(`All doctors: ${JSON.stringify(result.data, null, 2)}`);
-                    } catch (err: any) {
-                      console.error('Debug doctors error:', err);
-                      alert(`Error: ${err.message}`);
-                    }
-                  }}
-                  className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-4 py-2 rounded-lg text-sm transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-                >
-                  Debug Doctors
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -227,7 +224,13 @@ const DoctorProfile: React.FC = () => {
               {/* Profile Form */}
               <div className="bg-white rounded-xl shadow-xl border border-gray-100 p-8">
                 <Formik
-                  initialValues={doctor}
+                  initialValues={{
+                    ...doctor,
+                    availability: doctor?.availability?.map(a => ({
+                      ...a,
+                      date: a.date ? new Date(a.date).toISOString().split('T')[0] : ""
+                    })) || []
+                  }}
                   validationSchema={doctorValidationSchema}
                   onSubmit={handleSubmit}
                   key={doctor?._id || 'new'}
@@ -325,38 +328,57 @@ const DoctorProfile: React.FC = () => {
 
                       {/* Availability */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-4">Availability</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-4 flex items-center">
+                          <div className="w-4 h-4 bg-orange-100 rounded-full flex items-center justify-center mr-2">
+                            <svg className="w-2 h-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                          Availability Schedule
+                          {availabilityLoading && (
+                            <span className="ml-2 inline-flex items-center text-blue-600 text-xs">
+                              <div className="animate-spin rounded-full h-3 w-3 border border-blue-600 border-t-transparent mr-1"></div>
+                              Updating...
+                            </span>
+                          )}
+                        </label>
                         <FieldArray name="availability">
                           {({ remove, push }) => (
                             <div className="space-y-4">
                               {values.availability.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
-                                  <p className="mb-4">No availability set</p>
+                                <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                                  <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                  </div>
+                                  <p className="text-gray-500 font-medium mb-3">No availability set</p>
                                   <button 
                                     type="button" 
                                     onClick={() => push({ date: "", startTime: "", endTime: "" })} 
-                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2 rounded-lg text-sm transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                                   >
                                     + Add Availability
                                   </button>
                                 </div>
                               ) : (
                                 values.availability.map((a, idx) => (
-                                <div key={idx} className="grid grid-cols-5 gap-4 items-end p-4 border border-gray-200 rounded-lg">
+                                <div key={idx} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 bg-gray-50 rounded-lg border">
                                   <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                                     <div className="relative">
                                       <Field 
                                         name={`availability.${idx}.date`} 
                                         type="date" 
                                         min={new Date().toISOString().split('T')[0]}
-                                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" 
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" 
                                         onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
                                           // Force calendar to open on focus
                                           e.target.showPicker?.();
                                         }}
                                       />
                                       <div 
-                                        className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer"
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
                                         onClick={(e) => {
                                           e.preventDefault();
                                           const input = e.currentTarget.previousElementSibling as HTMLInputElement;
@@ -371,6 +393,7 @@ const DoctorProfile: React.FC = () => {
                                     <ErrorMessage name={`availability.${idx}.date`} component="div" className="text-xs text-red-600 mt-1" />
                                   </div>
                                   <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
                                     <Field 
                                       name={`availability.${idx}.startTime`} 
                                       type="text"
@@ -381,6 +404,7 @@ const DoctorProfile: React.FC = () => {
                                     <ErrorMessage name={`availability.${idx}.startTime`} component="div" className="text-xs text-red-600 mt-1" />
                                   </div>
                                   <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
                                     <Field 
                                       name={`availability.${idx}.endTime`} 
                                       type="text"
@@ -400,16 +424,36 @@ const DoctorProfile: React.FC = () => {
                                   <div>
                                     <button 
                                       type="button" 
+                                      disabled={availabilityLoading}
                                       onClick={() => {
                                         const dateStr = a.date ? new Date(a.date).toLocaleDateString() : 'this availability';
-                                        if (window.confirm(`Are you sure you want to remove ${dateStr}?`)) {
-                                          const newAvailability = values.availability.filter((_, index) => index !== idx);
-                                          setFieldValue('availability', newAvailability);
-                                        }
+                                        setConfirmationModal({
+                                          isOpen: true,
+                                          message: `Are you sure you want to remove ${dateStr}?`,
+                                          onConfirm: () => {
+                                            const newAvailability = values.availability.filter((_, index) => index !== idx);
+                                            setFieldValue('availability', newAvailability);
+                                            
+                                            // Auto-save the changes immediately after removal
+                                            const updatedValues = {
+                                              ...values,
+                                              availability: newAvailability
+                                            };
+                                            
+                                            // Submit the availability update automatically
+                                            handleAvailabilityUpdate(updatedValues);
+                                            
+                                            setConfirmationModal({
+                                              isOpen: false,
+                                              message: "",
+                                              onConfirm: null,
+                                            });
+                                          },
+                                        });
                                       }} 
-                                      className="w-full px-3 py-2 text-red-600 hover:text-red-800 text-sm font-medium border border-red-200 rounded-lg hover:bg-red-50"
+                                      className="w-full px-3 py-2 text-red-600 hover:text-red-800 text-sm font-medium border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                      Remove
+                                      {availabilityLoading ? 'Removing...' : 'Remove'}
                                     </button>
                                   </div>
                                 </div>
@@ -418,10 +462,23 @@ const DoctorProfile: React.FC = () => {
                               {values.availability.length > 0 && (
                                 <button 
                                   type="button" 
-                                  onClick={() => push({ date: "", startTime: "", endTime: "" })} 
-                                  className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                  disabled={availabilityLoading}
+                                  onClick={() => {
+                                    const newSlot = { date: "", startTime: "", endTime: "" };
+                                    push(newSlot);
+                                    
+                                    // Auto-save after adding new availability slot
+                                    const updatedValues = {
+                                      ...values,
+                                      availability: [...values.availability, newSlot]
+                                    };
+                                    
+                                    // Submit the availability update automatically
+                                    handleAvailabilityUpdate(updatedValues);
+                                  }} 
+                                  className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                  + Add Availability
+                                  {availabilityLoading ? 'Adding...' : '+ Add Availability'}
                                 </button>
                               )}
                             </div>
@@ -454,6 +511,21 @@ const DoctorProfile: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmationModal.isOpen}
+        onClose={() => setConfirmationModal({
+          isOpen: false,
+          message: "",
+          onConfirm: null,
+        })}
+        onConfirm={() => confirmationModal.onConfirm?.()}
+        title="Confirm Removal"
+        message={confirmationModal.message}
+        confirmText="Remove"
+        confirmButtonClass="bg-red-600 hover:bg-red-700"
+      />
     </div>
   );
 };
