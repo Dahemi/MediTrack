@@ -6,9 +6,7 @@ export const createAppointment = async (req: Request, res: Response) => {
   try {
     const { patientId, doctorId, date, time, queueNumber, notes } = req.body;
     
-    console.log('=== CREATING APPOINTMENT ===');
-    console.log('Request body:', req.body);
-    console.log('User from request:', req.user);
+    
 
     // Validate that doctor exists
     const User = (await import("../models/User.js")).default;
@@ -49,27 +47,20 @@ export const createAppointment = async (req: Request, res: Response) => {
       status: "booked",
     });
     
-    console.log('=== APPOINTMENT SAVED ===');
-    console.log('Saved appointment:', appointment);
+    
 
     // Populate the appointment with patient and doctor details
     const populatedAppointment = await Appointment.findById(appointment._id)
       .populate("patientId", "name email")
       .populate("doctorId", "name email");
     
-    console.log('=== APPOINTMENT POPULATED ===');
-    console.log('Populated appointment:', populatedAppointment);
-    console.log('Patient ID type:', typeof populatedAppointment.patientId);
-    console.log('Doctor ID type:', typeof populatedAppointment.doctorId);
-    console.log('Patient ID:', populatedAppointment.patientId);
-    console.log('Doctor ID:', populatedAppointment.doctorId);
+    
 
     // Get doctor details from Doctor model for specialization
     const Doctor = (await import("../models/doctor.model.js")).default;
     const doctorDetails = await Doctor.findOne({ userId: appointment.doctorId });
     
-    console.log('=== DOCTOR DETAILS FOUND ===');
-    console.log('Doctor details:', doctorDetails);
+    
     
     // Transform the data to match frontend expectations
     const transformedAppointment = {
@@ -92,11 +83,7 @@ export const createAppointment = async (req: Request, res: Response) => {
       updatedAt: populatedAppointment.updatedAt
     };
 
-    console.log('=== APPOINTMENT CREATED SUCCESSFULLY ===');
-    console.log('Original appointment:', appointment);
-    console.log('Populated appointment:', populatedAppointment);
-    console.log('Doctor details:', doctorDetails);
-    console.log('Transformed appointment:', transformedAppointment);
+    
 
     return res.status(201).json({
       success: true,
@@ -142,7 +129,7 @@ export const getAppointmentById = async (req: Request, res: Response) => {
   }
 };
 
-// ✅ Update appointment
+// ✅ Update appointment  
 export const updateAppointment = async (req: Request, res: Response) => {
   try {
     const appointment = await Appointment.findByIdAndUpdate(
@@ -254,29 +241,22 @@ export const getMyPatientAppointments = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    console.log('=== FETCHING PATIENT APPOINTMENTS ===');
-    console.log('Patient userId:', userId);
+    
 
     const appointments = await Appointment.find({ patientId: userId })
       .populate("patientId", "name email")
       .populate("doctorId", "name email")
       .sort({ date: 1, time: 1 });
 
-    console.log('=== APPOINTMENTS FOUND ===');
-    console.log('Raw appointments:', appointments);
+    
 
     // Get doctor details from Doctor model
     const Doctor = (await import("../models/doctor.model.js")).default;
     
     // Transform the data to match the expected frontend structure
     const transformedAppointments = await Promise.all(appointments.map(async (appointment) => {
-      console.log('=== TRANSFORMING APPOINTMENT ===');
-      console.log('Appointment ID:', appointment._id);
-      console.log('Doctor ID:', appointment.doctorId);
-      console.log('Patient ID:', appointment.patientId);
       
       const doctorDetails = await Doctor.findOne({ userId: appointment.doctorId });
-      console.log('Doctor details found:', doctorDetails);
       
       const transformed = {
         _id: appointment._id,
@@ -294,13 +274,9 @@ export const getMyPatientAppointments = async (req: Request, res: Response) => {
         queueNumber: appointment.queueNumber,
         notes: appointment.notes
       };
-      
-      console.log('Transformed appointment:', transformed);
       return transformed;
     }));
-
-    console.log('=== FINAL TRANSFORMED APPOINTMENTS ===');
-    console.log('Transformed appointments:', transformedAppointments);
+    
 
     return res.status(200).json(transformedAppointments);
   } catch (error) {

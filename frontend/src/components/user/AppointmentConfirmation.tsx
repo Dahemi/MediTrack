@@ -32,11 +32,6 @@ const AppointmentConfirmation: React.FC = () => {
   React.useEffect(() => {
     const currentUser = getCurrentUser();
     setUser(currentUser);
-    
-    console.log('=== APPOINTMENT CONFIRMATION MOUNTED ===');
-    console.log('Location state:', location.state);
-    console.log('Appointment data:', appointment);
-    console.log('Current user:', currentUser);
   }, [location.state, appointment]);
 
   if (!appointment) {

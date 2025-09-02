@@ -29,16 +29,10 @@ const PatientAppointments: React.FC = () => {
 
   const fetchAppointments = async () => {
     try {
-      console.log('=== FETCHING PATIENT APPOINTMENTS ===');
       const data = await getMyPatientAppointments();
-      console.log('=== APPOINTMENTS RECEIVED ===');
-      console.log('Raw data:', data);
-      console.log('Data type:', typeof data);
-      console.log('Data length:', Array.isArray(data) ? data.length : 'Not an array');
       setAppointments(data);
     } catch (error) {
-      console.error('=== ERROR FETCHING APPOINTMENTS ===');
-      console.error('Error:', error);
+      
     } finally {
       setLoading(false);
     }

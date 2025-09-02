@@ -22,7 +22,7 @@ const Appointments: React.FC = () => {
       const data = await getAppointments();
       setAppointments(data);
     } catch (error) {
-      console.error('Error fetching appointments:', error);
+      
     } finally {
       setLoading(false);
     }
@@ -64,7 +64,7 @@ const Appointments: React.FC = () => {
       await updateAppointmentStatus(appointmentId, newStatus);
       fetchAppointments(); // Refresh the list
     } catch (error) {
-      console.error('Error updating status:', error);
+      
     }
   };
 

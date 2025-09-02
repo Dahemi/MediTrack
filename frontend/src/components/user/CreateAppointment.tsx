@@ -48,12 +48,9 @@ const CreateAppointment: React.FC = () => {
 
   const fetchDoctors = async () => {
     try {
-      console.log('Fetching doctors with availability...');
       const response = await getDoctorsWithAvailability();
-      console.log('Doctors response:', response);
       setDoctors(response.data?.doctors || []);
     } catch (error) {
-      console.error('Error fetching doctors:', error);
       setError('Failed to load doctors');
     }
   };
@@ -61,48 +58,10 @@ const CreateAppointment: React.FC = () => {
   const fetchAvailableSlots = async (doctorId: string, date: string) => {
     try {
       setLoadingSlots(true);
-      console.log('=== FETCHING AVAILABLE SLOTS ===');
-      console.log('Doctor ID:', doctorId);
-      console.log('Date:', date);
-      console.log('Date type:', typeof date);
-      
-      // First, let's debug all doctors
-      try {
-        const allDoctorsResponse = await fetch(`http://localhost:5000/api/doctor/debug/all`);
-        const allDoctorsData = await allDoctorsResponse.json();
-        console.log('=== ALL DOCTORS DEBUG DATA ===');
-        console.log('All doctors response:', allDoctorsData);
-        console.log('Doctors count:', allDoctorsData.data?.count);
-        console.log('Doctors list:', allDoctorsData.data?.doctors);
-      } catch (allDoctorsError) {
-        console.error('All doctors debug request failed:', allDoctorsError);
-      }
-      
-      // Then debug the specific doctor
-      try {
-        const debugResponse = await fetch(`http://localhost:5000/api/doctor/debug/${doctorId}`);
-        const debugData = await debugResponse.json();
-        console.log('=== SPECIFIC DOCTOR DEBUG DATA ===');
-        console.log('Debug response:', debugData);
-        console.log('Doctor availability:', debugData.data?.availability);
-        console.log('Availability length:', debugData.data?.availabilityLength);
-        console.log('Has availability:', debugData.data?.hasAvailability);
-        console.log('Is array:', debugData.data?.isArray);
-      } catch (debugError) {
-        console.error('Specific doctor debug request failed:', debugError);
-      }
-      
       const response = await getDoctorAvailableSlots(doctorId, date);
-      console.log('Available slots response:', response);
-      console.log('Response data:', response.data);
-      console.log('Slots array:', response.data?.slots);
-      
       const slots = response.data?.slots || [];
-      console.log('Setting available slots to:', slots);
       setAvailableSlots(slots);
     } catch (error) {
-      console.error('Error fetching available slots:', error);
-      console.error('Error details:', error);
       setAvailableSlots([]);
     } finally {
       setLoadingSlots(false);
@@ -146,11 +105,6 @@ const CreateAppointment: React.FC = () => {
         return;
       }
 
-      console.log('=== SELECTED DOCTOR ===');
-      console.log('Selected doctor:', selectedDoctor);
-      console.log('Doctor _id:', selectedDoctor._id);
-      console.log('Doctor userId:', selectedDoctor.userId);
-
       const appointmentData = {
         patientId: user.id,
         doctorId: selectedDoctor.userId, // Use the doctor's userId, not the doctor document ID
@@ -159,35 +113,16 @@ const CreateAppointment: React.FC = () => {
         notes: formData.notes,
         queueNumber: Math.floor(Math.random() * 100) + 1 // Temporary queue number generation
       };
-
-      console.log('=== CREATING APPOINTMENT ===');
-      console.log('Appointment data being sent:', appointmentData);
-      console.log('Current user:', user);
-
       const response = await createAppointment(appointmentData);
-      
-      console.log('=== APPOINTMENT CREATION RESPONSE ===');
-      console.log('Full response:', response);
-      console.log('Response success:', response.success);
-      console.log('Response data:', response.data);
-      
       if (response.success) {
-        console.log('=== NAVIGATING TO CONFIRMATION ===');
-        console.log('Navigation state:', { appointment: response.data });
         navigate('/appointment/confirmation', { 
           state: { appointment: response.data } 
         });
       } else {
-        console.log('=== APPOINTMENT CREATION FAILED ===');
-        console.log('Error message:', response.message);
         setError(response.message || 'Failed to create appointment');
       }
     } catch (error: any) {
-      console.log('=== APPOINTMENT CREATION ERROR ===');
-      console.log('Error object:', error);
-      console.log('Error message:', error.message);
       setError(error.message || 'Error creating appointment. Please try again.');
-      console.error('Error creating appointment:', error);
     } finally {
       setLoading(false);
     }

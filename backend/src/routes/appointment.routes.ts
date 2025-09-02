@@ -9,12 +9,12 @@ import {
   getMyAppointments,
   getMyPatientAppointments,
 } from "../controllers/appointment.controller.js";
-import { authenticateToken, requireDoctor, requirePatient, requirePatientDebug } from "../middleware/auth.js";
+import { authenticateToken, requireDoctor, requirePatient } from "../middleware/auth.js";
 
 const router: Router = express.Router();
 
 // Create new appointment
-router.post("/", authenticateToken, requirePatientDebug, createAppointment);
+router.post("/", authenticateToken, requirePatient, createAppointment);
 // Get all appointments
 router.get("/", getAppointments);
 // Get appointments for current doctor (authenticated) - must come before /:id routes

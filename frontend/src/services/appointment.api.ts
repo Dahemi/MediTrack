@@ -29,7 +29,6 @@ export const getAppointments = async (): Promise<AppointmentData[]> => {
     }
     return response.data;
   } catch (error: any) {
-    console.error('Error fetching appointments:', error);
     throw error.response?.data || { 
       success: false, 
       message: 'Failed to fetch appointments' 
@@ -57,7 +56,6 @@ export const getDoctorAppointments = async (doctorId: string): Promise<Appointme
     }
     return response.data;
   } catch (error: any) {
-    console.error('Error fetching doctor appointments:', error);
     throw error.response?.data || { 
       success: false, 
       message: 'Failed to fetch doctor appointments' 
@@ -73,7 +71,6 @@ export const getMyAppointments = async (): Promise<AppointmentData[]> => {
     }
     return response.data;
   } catch (error: any) {
-    console.error('Error fetching my appointments:', error);
     throw error.response?.data || { 
       success: false, 
       message: 'Failed to fetch my appointments' 
@@ -89,7 +86,6 @@ export const getMyPatientAppointments = async (): Promise<AppointmentData[]> => 
     }
     return response.data;
   } catch (error: any) {
-    console.error('Error fetching my patient appointments:', error);
     throw error.response?.data || { 
       success: false, 
       message: 'Failed to fetch my patient appointments' 
