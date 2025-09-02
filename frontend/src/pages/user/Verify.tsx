@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { verifyPatient } from "../../services/api";
+import { verifyUser } from "../../services/api";
 
 const Verify: React.FC = () => {
   const { token } = useParams<{ token: string }>();
@@ -28,13 +28,13 @@ const Verify: React.FC = () => {
       }
 
       try {
-        const response = await verifyPatient(token);
+        const response = await verifyUser(token);
         setVerificationStatus({
           loading: false,
           success: true,
           message:
             response.message || "Your account has been verified successfully!",
-          patientName: response.data?.patient?.name,
+          patientName: response.data?.user?.name,
         });
       } catch (error: any) {
         setVerificationStatus({
@@ -55,9 +55,9 @@ const Verify: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full text-center">
           <div className="bg-white py-12 px-6 shadow-xl rounded-lg border border-gray-100">
-            <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            </div>
+                      <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+          </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Verifying Your Account
             </h2>
@@ -76,18 +76,17 @@ const Verify: React.FC = () => {
         <div className="bg-white py-12 px-6 shadow-xl rounded-lg border border-gray-100">
           {/* Logo */}
           <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-2xl">M</span>
-              </div>
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-teal-500 rounded-full"></div>
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </div>
           </div>
 
           {/* Status Icon */}
           <div className="flex justify-center mb-6">
             {verificationStatus.success ? (
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-green-200 rounded-full flex items-center justify-center">
                 <svg
                   className="w-10 h-10 text-green-600"
                   fill="none"
@@ -103,7 +102,7 @@ const Verify: React.FC = () => {
                 </svg>
               </div>
             ) : (
-              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center">
                 <svg
                   className="w-10 h-10 text-red-600"
                   fill="none"
@@ -154,7 +153,7 @@ const Verify: React.FC = () => {
               <>
                 <Link
                   to="/login"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl inline-block"
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl inline-block"
                 >
                   Continue to Login
                 </Link>
@@ -169,7 +168,7 @@ const Verify: React.FC = () => {
               <>
                 <Link
                   to="/register"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl inline-block"
+                  className="w-full bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl inline-block"
                 >
                   Try Registration Again
                 </Link>

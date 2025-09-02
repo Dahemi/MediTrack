@@ -2,6 +2,7 @@ import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import appointmentRoutes from "./routes/appointment.routes.js";
 import authRoutes from "./routes/authRoutes.js";
+import doctorRoutes from "./routes/doctor.routes.js";
 
 const app: Express = express();
 
@@ -22,6 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use("/api/appointment", appointmentRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/doctor", doctorRoutes);
 
 // Health check
 app.get("/api/health", (_req, res) => {

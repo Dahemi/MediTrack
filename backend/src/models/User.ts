@@ -1,9 +1,10 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export interface IPatient extends Document {
+export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
+  role: "patient" | "doctor" | "admin";
   isVerified: boolean;
   verificationToken: string | undefined;
   verificationTokenExpires: Date | undefined;
@@ -11,7 +12,7 @@ export interface IPatient extends Document {
   updatedAt: Date;
 }
 
-const PatientSchema: Schema = new Schema(
+const UserSchema: Schema = new Schema(
   {
     name: {
       type: String,
@@ -36,6 +37,12 @@ const PatientSchema: Schema = new Schema(
       required: [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters long"],
     },
+    role: {
+      type: String,
+      enum: ["patient", "doctor", "admin"],
+      default: "patient",
+      required: true,
+    },
     isVerified: {
       type: Boolean,
       default: false,
@@ -55,17 +62,16 @@ const PatientSchema: Schema = new Schema(
 );
 
 // Index for faster email lookups
-//PatientSchema.index({ email: 1 });
-PatientSchema.index({ verificationToken: 1 });
+UserSchema.index({ verificationToken: 1 });
 
 // Remove password from JSON output
-PatientSchema.methods.toJSON = function () {
-  const patient = this.toObject();
-  delete patient.password;
-  delete patient.verificationToken;
-  delete patient.verificationTokenExpires;
-  return patient;
+UserSchema.methods.toJSON = function () {
+  const user = this.toObject();
+  delete user.password;
+  delete user.verificationToken;
+  delete user.verificationTokenExpires;
+  return user;
 };
 
-const Patient = mongoose.model<IPatient>("Patient", PatientSchema);
-export default Patient;
+const User = mongoose.model<IUser>("User", UserSchema);
+export default User;
