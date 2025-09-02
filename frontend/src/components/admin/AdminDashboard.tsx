@@ -11,24 +11,19 @@ const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("AdminDashboard: Checking authentication...");
     const currentUser = getCurrentUser();
-    console.log("AdminDashboard: Current user:", currentUser);
     
     if (!currentUser) {
-      console.log("AdminDashboard: No user found, redirecting to login");
       navigate('/login');
       return;
     }
     
     // Check if user is admin
     if (currentUser.role !== 'admin') {
-      console.log("AdminDashboard: User is not admin, redirecting to dashboard");
       navigate('/dashboard');
       return;
     }
     
-    console.log("AdminDashboard: Setting admin user:", currentUser);
     setUser(currentUser);
     setLoading(false);
   }, [navigate]);
@@ -38,7 +33,6 @@ const AdminDashboard: React.FC = () => {
   };
 
   if (loading) {
-    console.log("AdminDashboard: Loading...");
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 flex items-center justify-center">
         <div className="text-center">
@@ -50,11 +44,9 @@ const AdminDashboard: React.FC = () => {
   }
 
   if (!user) {
-    console.log("AdminDashboard: No user, returning null");
     return null;
   }
 
-  console.log("AdminDashboard: Rendering dashboard for admin:", user);
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50">
