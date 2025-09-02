@@ -19,7 +19,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email, password, role = "patient" } = req.body;
     
-    console.log("Signup attempt:", { name, email, role });
+    
 
     // Validation
     if (!name || !email || !password) {
@@ -44,7 +44,6 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       email: email.toLowerCase(),
     });
     if (existingUser) {
-      console.log("User already exists:", existingUser.email);
       res.status(400).json({
         success: false,
         message: "A user with this email already exists",
@@ -83,12 +82,11 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
     // Save user to database
     await newUser.save();
     
-    console.log("User saved successfully:", newUser._id);
+    
 
     // Send verification email
     try {
       await sendVerificationEmail(newUser.email, verificationToken);
-      console.log("Verification email sent to:", newUser.email);
     } catch (emailError) {
       console.error("Failed to send verification email:", emailError);
       // Delete the user if email sending fails
@@ -115,7 +113,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       },
     });
   } catch (error: any) {
-    console.error("Signup error:", error);
+    
 
     // Handle duplicate email error
     if (error.code === 11000) {
@@ -153,7 +151,7 @@ export const verifyEmail = async (
   try {
     const { token } = req.params;
     
-    console.log("Email verification attempt with token:", token);
+    
 
     if (!token) {
       res.status(400).json({
@@ -169,7 +167,7 @@ export const verifyEmail = async (
       verificationTokenExpires: { $gt: new Date() },
     });
 
-    console.log("User found for verification:", user ? user.email : "Not found");
+    
 
     if (!user) {
       res.status(400).json({
@@ -181,7 +179,7 @@ export const verifyEmail = async (
 
     // Check if already verified
     if (user.isVerified) {
-      console.log("User already verified:", user.email);
+      
       res.status(200).json({
         success: true,
         message: "Email is already verified",
@@ -204,7 +202,7 @@ export const verifyEmail = async (
     user.verificationTokenExpires = undefined;
     await user.save();
     
-    console.log("User verified successfully:", user.email, "ID:", user._id?.toString());
+    
 
     res.status(200).json({
       success: true,
@@ -221,7 +219,7 @@ export const verifyEmail = async (
       },
     });
   } catch (error: any) {
-    console.error("Email verification error:", error);
+    
     res.status(500).json({
       success: false,
       message: "Internal server error. Please try again later.",
@@ -292,7 +290,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       },
     });
   } catch (error: any) {
-    console.error("Login error:", error);
+    
     res.status(500).json({
       success: false,
       message: "Internal server error. Please try again later.",
@@ -310,7 +308,7 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
       },
     });
   } catch (error: any) {
-    console.error("Get profile error:", error);
+    
     res.status(500).json({
       success: false,
       message: "Internal server error. Please try again later.",
@@ -367,7 +365,7 @@ export const resendVerification = async (
       message: "Verification email sent successfully",
     });
   } catch (error: any) {
-    console.error("Resend verification error:", error);
+    
     res.status(500).json({
       success: false,
       message: "Failed to resend verification email",

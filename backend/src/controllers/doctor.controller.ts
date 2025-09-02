@@ -40,20 +40,7 @@ export const createDoctor = async (req: Request, res: Response) => {
 // Get all doctors with user information
 export const getDoctors = async (_req: Request, res: Response) => {
   try {
-    const doctors = await Doctor.find(); // Don't populate userId for admin list
-    console.log('getDoctors - Found doctors:', doctors);
-    
-    // Debug each doctor's userId field
-    doctors.forEach((doctor, index) => {
-      console.log(`Backend Doctor ${index}:`, {
-        fullName: doctor.fullName,
-        userId: doctor.userId,
-        userIdType: typeof doctor.userId,
-        userIdString: String(doctor.userId),
-        isVerifiedDoctor: doctor.isVerifiedDoctor
-      });
-    });
-    
+    const doctors = await Doctor.find();
     res.json({ success: true, data: { doctors } });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -92,9 +79,12 @@ export const getDoctorByUserId = async (req: Request, res: Response) => {
 // Update doctor profile
 export const updateDoctor = async (req: Request, res: Response) => {
   try {
-    console.log('updateDoctor - Doctor ID:', req.params.id);
-    console.log('updateDoctor - Request body:', req.body);
-    console.log('updateDoctor - Availability in request:', req.body.availability);
+    
+    // First, get the current doctor to find the userId
+    const currentDoctor = await Doctor.findById(req.params.id);
+    if (!currentDoctor) {
+      return res.status(404).json({ success: false, message: "Doctor not found" });
+    }
     
     // Use findByIdAndUpdate with explicit $set for availability to ensure proper array replacement
     const updateData = {
@@ -102,8 +92,7 @@ export const updateDoctor = async (req: Request, res: Response) => {
       availability: req.body.availability // Explicitly set the availability array
     };
     
-    console.log('updateDoctor - Final update data:', updateData);
-    
+    // Update doctor profile
     const doctor = await Doctor.findByIdAndUpdate(
       req.params.id, 
       { $set: updateData }, 
@@ -114,12 +103,13 @@ export const updateDoctor = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: "Doctor not found" });
     }
     
-    console.log('updateDoctor - Updated doctor:', doctor);
-    console.log('updateDoctor - Final availability:', doctor.availability);
+    // If fullName was updated, also update the User model
+    if (req.body.fullName && req.body.fullName !== currentDoctor.fullName) {
+      await syncDoctorName(currentDoctor.userId, req.body.fullName);
+    }
     
     res.json({ success: true, data: { doctor } });
   } catch (error: any) {
-    console.error('updateDoctor - Error:', error);
     res.status(400).json({ success: false, message: error.message });
   }
 };
@@ -128,10 +118,23 @@ export const updateDoctor = async (req: Request, res: Response) => {
 export const updateDoctorByUserId = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
+    
+    // First, get the current doctor to check if fullName is being updated
+    const currentDoctor = await Doctor.findOne({ userId });
+    if (!currentDoctor) {
+      return res.status(404).json({ success: false, message: "Doctor profile not found" });
+    }
+    
+    // Update doctor profile
     const doctor = await Doctor.findOneAndUpdate({ userId }, req.body, { new: true });
     
     if (!doctor) {
       return res.status(404).json({ success: false, message: "Doctor profile not found" });
+    }
+    
+    // If fullName was updated, also update the User model
+    if (req.body.fullName && req.body.fullName !== currentDoctor.fullName) {
+      await syncDoctorName(userId, req.body.fullName);
     }
     
     res.json({ success: true, data: { doctor } });
@@ -140,14 +143,47 @@ export const updateDoctorByUserId = async (req: Request, res: Response) => {
   }
 };
 
+// Utility function to synchronize doctor name between Doctor and User models
+const syncDoctorName = async (userId: string, newFullName: string) => {
+  try {
+    await User.findByIdAndUpdate(
+      userId,
+      { name: newFullName },
+      { new: true, runValidators: true }
+    );
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
 // Delete doctor
 export const deleteDoctor = async (req: Request, res: Response) => {
   try {
-    const doctor = await Doctor.findByIdAndDelete(req.params.id);
+    const { deleteUser: shouldDeleteUser } = req.query;
+    
+    // Get the doctor first to check if we should also delete the user
+    const doctor = await Doctor.findById(req.params.id);
     if (!doctor) {
       return res.status(404).json({ success: false, message: "Doctor not found" });
     }
-    res.json({ success: true, message: "Doctor deleted" });
+    
+    // Delete the doctor profile
+    await Doctor.findByIdAndDelete(req.params.id);
+    
+    // Optionally delete the associated user if requested
+    if (shouldDeleteUser === 'true' && doctor.userId) {
+      try {
+        await User.findByIdAndDelete(doctor.userId);
+      } catch (_userDeleteError) {
+        // Don't fail the entire operation if user deletion fails
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      message: shouldDeleteUser === 'true' ? "Doctor and user deleted" : "Doctor profile deleted" 
+    });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -158,16 +194,11 @@ export const getMyDoctorProfile = async (req: Request, res: Response) => {
   try {
     const userId = req.user?._id; // From JWT token - use _id not id
     
-    console.log('getMyDoctorProfile - User ID:', userId);
-    console.log('getMyDoctorProfile - User:', req.user);
-    
     if (!userId) {
       return res.status(401).json({ success: false, message: "Not authenticated" });
     }
     
     const doctor = await Doctor.findOne({ userId }).populate('userId', 'name email role isVerified');
-    
-    console.log('getMyDoctorProfile - Found doctor:', doctor);
     
     if (!doctor) {
       return res.status(404).json({ success: false, message: "Doctor profile not found" });
@@ -175,7 +206,6 @@ export const getMyDoctorProfile = async (req: Request, res: Response) => {
     
     res.json({ success: true, data: { doctor } });
   } catch (error: any) {
-    console.error('getMyDoctorProfile - Error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -183,14 +213,17 @@ export const getMyDoctorProfile = async (req: Request, res: Response) => {
 // Update doctor profile for current user (authenticated doctor)
 export const updateMyDoctorProfile = async (req: Request, res: Response) => {
   try {
-    console.log('updateMyDoctorProfile - User ID:', req.user?._id);
-    console.log('updateMyDoctorProfile - Request body:', req.body);
-    console.log('updateMyDoctorProfile - Availability in request:', req.body.availability);
     
     const userId = req.user?._id; // From JWT token - use _id not id
     
     if (!userId) {
       return res.status(401).json({ success: false, message: "Not authenticated" });
+    }
+    
+    // First, get the current doctor to check if fullName is being updated
+    const currentDoctor = await Doctor.findOne({ userId });
+    if (!currentDoctor) {
+      return res.status(404).json({ success: false, message: "Doctor profile not found" });
     }
     
     // Use findOneAndUpdate with explicit $set for availability to ensure proper array replacement
@@ -199,8 +232,7 @@ export const updateMyDoctorProfile = async (req: Request, res: Response) => {
       availability: req.body.availability // Explicitly set the availability array
     };
     
-    console.log('updateMyDoctorProfile - Final update data:', updateData);
-    
+    // Update doctor profile
     const doctor = await Doctor.findOneAndUpdate(
       { userId }, 
       { $set: updateData }, 
@@ -211,12 +243,13 @@ export const updateMyDoctorProfile = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: "Doctor profile not found" });
     }
     
-    console.log('updateMyDoctorProfile - Updated doctor:', doctor);
-    console.log('updateMyDoctorProfile - Final availability:', doctor.availability);
+    // If fullName was updated, also update the User model
+    if (req.body.fullName && req.body.fullName !== currentDoctor.fullName) {
+      await syncDoctorName(userId, req.body.fullName);
+    }
     
     return res.json({ success: true, data: { doctor } });
   } catch (error: any) {
-    console.error('updateMyDoctorProfile - Error:', error);
     res.status(400).json({ success: false, message: error.message });
   }
 };
@@ -224,15 +257,11 @@ export const updateMyDoctorProfile = async (req: Request, res: Response) => {
 // Get all doctors with availability
 export const getDoctorsWithAvailability = async (req: Request, res: Response) => {
   try {
-    console.log('getDoctorsWithAvailability called');
     const doctors = await Doctor.find({ isVerifiedDoctor: true })
       .populate('userId', 'name email')
       .select('fullName specialization availability');
-    
-    console.log('Found doctors with availability:', doctors.length);
     res.json({ success: true, data: { doctors } });
   } catch (error: any) {
-    console.error('Error in getDoctorsWithAvailability:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -242,73 +271,34 @@ export const getDoctorAvailableSlots = async (req: Request, res: Response) => {
   try {
     const { doctorId } = req.params;
     const { date } = req.query;
-    
-    console.log('=== getDoctorAvailableSlots START ===');
-    console.log('getDoctorAvailableSlots called with doctorId:', doctorId, 'date:', date);
-    console.log('Request params:', req.params);
-    console.log('Request query:', req.query);
-    
     if (!date || typeof date !== 'string') {
-      console.log('Date parameter validation failed');
       return res.status(400).json({ success: false, message: "Date parameter is required" });
     }
-    
-    console.log('About to find doctor with ID:', doctorId);
     const doctor = await Doctor.findById(doctorId);
-    console.log('Doctor find result:', doctor ? 'Found' : 'Not found');
     
     if (!doctor) {
-      console.log('Doctor not found for ID:', doctorId);
       return res.status(404).json({ success: false, message: "Doctor not found" });
     }
-    
-    console.log('Found doctor:', doctor.fullName);
-    console.log('Doctor ID from database:', doctor._id);
-    console.log('Doctor availability from database:', doctor.availability);
-    console.log('Doctor availability type:', typeof doctor.availability);
-    console.log('Doctor availability is array:', Array.isArray(doctor.availability));
-    console.log('Doctor availability length:', doctor.availability?.length);
-    console.log('Looking for date:', date);
-    
     // Check if availability exists and is an array
     if (!doctor.availability || !Array.isArray(doctor.availability)) {
-      console.log('No availability array found for doctor');
-      console.log('Doctor object keys:', Object.keys(doctor.toObject()));
-      console.log('Doctor availability value:', doctor.availability);
       return res.json({ success: true, data: { slots: [] } });
     }
-    
     // Check if doctor has any availability entries
     if (doctor.availability.length === 0) {
-      console.log('Doctor has no availability entries');
       return res.json({ success: true, data: { slots: [] } });
     }
-    
-    console.log('Doctor has', doctor.availability.length, 'availability entries');
-    console.log('First availability entry:', doctor.availability[0]);
     
     // Find availability for the specific date
-    const availability = doctor.availability.find(a => {
-      const availabilityDate = a.date.toISOString().split('T')[0];
-      console.log('Comparing availability date:', availabilityDate, 'with requested date:', date);
-      return availabilityDate === date;
-    });
+    const availability = doctor.availability.find(a => a.date.toISOString().split('T')[0] === date);
     
     if (!availability) {
-      console.log('No availability found for date:', date);
-      console.log('Available dates:', doctor.availability.map(a => a.date.toISOString().split('T')[0]));
       return res.json({ success: true, data: { slots: [] } });
     }
-    
-    console.log('Found availability:', availability);
     
     // Calculate 30-minute slots between start and end time
     const slots: string[] = [];
     const startTime = new Date(`2000-01-01T${availability.startTime}`);
     const endTime = new Date(`2000-01-01T${availability.endTime}`);
-    
-    console.log('Start time object:', startTime);
-    console.log('End time object:', endTime);
     
     let currentTime = new Date(startTime);
     while (currentTime < endTime) {
@@ -316,28 +306,17 @@ export const getDoctorAvailableSlots = async (req: Request, res: Response) => {
       slots.push(timeString);
       currentTime.setMinutes(currentTime.getMinutes() + 30);
     }
-    
-    console.log('Calculated slots:', slots);
-    
     // Get booked appointments for this date
-    console.log('Querying booked appointments with:', { doctorId, date });
     const bookedAppointments = await Appointment.find({
       doctorId,
       date,
       status: { $in: ['booked', 'in_session'] }
     });
-    
-    console.log('Booked appointments:', bookedAppointments);
-    
     // Remove booked slots
     const bookedTimes = bookedAppointments.map(app => app.time);
     const availableSlots = slots.filter(slot => !bookedTimes.includes(slot));
-    
-    console.log('Available slots:', availableSlots);
-    
     res.json({ success: true, data: { slots: availableSlots } });
   } catch (error: any) {
-    console.error('Error in getDoctorAvailableSlots:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

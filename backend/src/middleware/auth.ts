@@ -27,10 +27,6 @@ export const authenticateToken = async (
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
-    console.log('=== AUTHENTICATING TOKEN ===');
-    console.log('Auth header:', authHeader);
-    console.log('Token:', token);
-
     if (!token) {
       return res.status(401).json({
         success: false,
@@ -39,13 +35,9 @@ export const authenticateToken = async (
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
-    console.log('=== TOKEN DECODED ===');
-    console.log('Decoded token:', decoded);
     
     // Get user from database
     const user = await User.findById(decoded.userId).select("-password");
-    console.log('=== USER FOUND ===');
-    console.log('User:', user);
     
     if (!user) {
       return res.status(401).json({
@@ -95,30 +87,3 @@ export const requireRole = (roles: string[]) => {
 export const requireAdmin = requireRole(["admin"]);
 export const requireDoctor = requireRole(["doctor", "admin"]);
 export const requirePatient = requireRole(["patient", "doctor", "admin"]);
-
-// Add debugging to requirePatient
-export const requirePatientDebug = (req: Request, res: Response, next: NextFunction) => {
-  console.log('=== REQUIRE PATIENT MIDDLEWARE ===');
-  console.log('User:', req.user);
-  console.log('User role:', req.user?.role);
-  console.log('Allowed roles:', ["patient", "doctor", "admin"]);
-  
-  if (!req.user) {
-    console.log('No user found');
-    return res.status(401).json({
-      success: false,
-      message: "Authentication required",
-    });
-  }
-
-  if (!["patient", "doctor", "admin"].includes(req.user.role)) {
-    console.log('User role not allowed');
-    return res.status(403).json({
-      success: false,
-      message: "Insufficient permissions",
-    });
-  }
-
-  console.log('Patient middleware passed');
-  next();
-};

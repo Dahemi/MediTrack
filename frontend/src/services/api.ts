@@ -1,5 +1,8 @@
 import axios from 'axios';
-console.log('API URL:', import.meta.env.VITE_API_URL);
+if (import.meta.env.DEV) {
+  // eslint-disable-next-line no-console
+  console.log('API URL:', import.meta.env.VITE_API_URL);
+}
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -17,11 +20,17 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log(`Making ${config.method?.toUpperCase()} request to ${config.url}`);
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.log(`Making ${config.method?.toUpperCase()} request to ${config.url}`);
+    }
     return config;
   },
   (error) => {
-    console.error('Request error:', error);
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.error('Request error:', error);
+    }
     return Promise.reject(error);
   }
 );
@@ -32,7 +41,10 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error('Response error:', error.response?.data || error.message);
+    if (import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.error('Response error:', error.response?.data || error.message);
+    }
     
     // Handle token expiration
     if (error.response?.status === 401) {

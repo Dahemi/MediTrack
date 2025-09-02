@@ -14,7 +14,6 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
       },
     });
   } catch (error: any) {
-    console.error("Get all users error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error. Please try again later.",
@@ -46,7 +45,6 @@ export const getUsersByRole = async (req: Request, res: Response): Promise<void>
       },
     });
   } catch (error: any) {
-    console.error("Get users by role error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error. Please try again later.",
@@ -90,7 +88,6 @@ export const updateUserRole = async (req: Request, res: Response): Promise<void>
       },
     });
   } catch (error: any) {
-    console.error("Update user role error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error. Please try again later.",
@@ -118,7 +115,6 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
       message: "User deleted successfully",
     });
   } catch (error: any) {
-    console.error("Delete user error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error. Please try again later.",
