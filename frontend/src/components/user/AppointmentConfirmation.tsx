@@ -4,14 +4,11 @@ import { format } from 'date-fns';
 
 interface AppointmentData {
   _id: string;
-  patientId: {
-    name: string;
-    email: string;
-  };
-  doctorId: {
-    name: string;
-    specialization: string;
-  };
+  patientName: string;
+  patientAddress: string;
+  patientContact: string;
+  doctorId: string | { name: string; specialization: string };
+  doctorName?: string;
   date: string;
   time: string;
   queueNumber: number;
@@ -31,10 +28,10 @@ const AppointmentConfirmation: React.FC = () => {
           <h2 className="text-xl font-semibold text-red-600 mb-4">Error</h2>
           <p className="text-gray-600">No appointment data found.</p>
           <button
-            onClick={() => navigate('/appointments')}
+            onClick={() => navigate('/')}
             className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Back to Appointments
+            Back to Home
           </button>
         </div>
       </div>
@@ -78,8 +75,16 @@ const AppointmentConfirmation: React.FC = () => {
             <div className="flex items-center justify-between pb-4 border-b border-gray-100">
               <div className="space-y-1">
                 <p className="text-sm text-gray-500">Doctor</p>
-                <p className="font-semibold text-gray-900">{appointment.doctorId.name}</p>
-                <p className="text-sm text-gray-600">{appointment.doctorId.specialization}</p>
+                <p className="font-semibold text-gray-900">
+                  {typeof appointment.doctorId === 'object'
+                    ? appointment.doctorId.name
+                    : appointment.doctorName}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {typeof appointment.doctorId === 'object'
+                    ? appointment.doctorId.specialization
+                    : ''}
+                </p>
               </div>
               <div className="text-right space-y-1">
                 <p className="text-sm text-gray-500">Queue Number</p>
@@ -96,6 +101,13 @@ const AppointmentConfirmation: React.FC = () => {
                 <p className="text-sm text-gray-500">Time</p>
                 <p className="font-semibold text-gray-900">{appointment.time}</p>
               </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-sm text-gray-500">Patient</p>
+              <p className="font-semibold text-gray-900">{appointment.patientName}</p>
+              <p className="text-sm text-gray-600">{appointment.patientContact}</p>
+              <p className="text-sm text-gray-600">{appointment.patientAddress}</p>
             </div>
 
             {appointment.notes && (
@@ -116,27 +128,19 @@ const AppointmentConfirmation: React.FC = () => {
           {/* Actions */}
           <div className="space-y-4">
             <button
-              onClick={() => {/* Add to calendar logic */}}
+              onClick={() => navigate('/')}
               className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <span>Add to Calendar</span>
-            </button>
-            
-            <button
-              onClick={() => navigate('/appointments')}
-              className="w-full border-2 border-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              View All Appointments
+              <span>Back to Home</span>
             </button>
           </div>
 
           {/* Additional Info */}
           <div className="text-center text-sm text-gray-500">
-            <p>A confirmation email has been sent to {appointment.patientId.email}</p>
-            <p className="mt-1">Please arrive 10 minutes before your scheduled time</p>
+            <p>Please arrive 10 minutes before your scheduled time.</p>
           </div>
         </div>
       </div>

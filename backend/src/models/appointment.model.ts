@@ -1,11 +1,13 @@
 import { Schema, model, Document } from "mongoose";
-//import { User } from "./user.model.js";
 
 export interface IAppointment extends Document {
-  patientId: Schema.Types.ObjectId;
+  patientName: string;
+  patientAddress: string;
+  patientContact: string;
   doctorId: Schema.Types.ObjectId;
-  date: string; 
-  time: string; 
+  doctorName?: string;
+  date: string;
+  time: string;
   status: "booked" | "in_session" | "completed" | "cancelled";
   queueNumber: number;
   notes?: string;
@@ -15,10 +17,13 @@ export interface IAppointment extends Document {
 
 const appointmentSchema = new Schema<IAppointment>(
   {
-    patientId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    doctorId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    date: { type: String, required: true }, // e.g. "2025-08-25"
-    time: { type: String, required: true }, // e.g. "10:30"
+    patientName: { type: String, required: true },
+    patientAddress: { type: String, required: true },
+    patientContact: { type: String, required: true },
+    doctorId: { type: Schema.Types.ObjectId, ref: "Doctor", required: true },
+    doctorName: { type: String },
+    date: { type: String, required: true },
+    time: { type: String, required: true },
     status: {
       type: String,
       enum: ["booked", "in_session", "completed", "cancelled"],
@@ -28,11 +33,8 @@ const appointmentSchema = new Schema<IAppointment>(
     notes: { type: String },
   },
   {
-    timestamps: true, 
+    timestamps: true,
   }
 );
 
-export const Appointment = model<IAppointment>(
-  "Appointment",
-  appointmentSchema
-);
+export const Appointment = model<IAppointment>("Appointment", appointmentSchema);

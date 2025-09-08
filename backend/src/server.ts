@@ -4,6 +4,7 @@ import cors from "cors";
 import express from "express";
 import authRoutes from "./routes/authRoutes.js";
 import doctorRoutes from "./routes/doctor.routes.js";
+import appointmentRoutes from "./routes/appointment.routes.js";
 dotenv.config();
 
 const app = express();
@@ -22,6 +23,7 @@ mongoose
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/doctors", doctorRoutes); 
+app.use("/api/appointment", appointmentRoutes);
 
 // Basic API endpoint
 app.get("/api/health", (_req, res) => {

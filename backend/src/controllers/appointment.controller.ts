@@ -1,12 +1,21 @@
 import { Request, Response } from "express";
 import { Appointment } from "../models/appointment.model.js";
 
-// ✅ Create new appointment (with conflict checking)
+// Create new appointment (with conflict checking)
 export const createAppointment = async (req: Request, res: Response) => {
   try {
-    const { patientId, doctorId, date, time, queueNumber, notes } = req.body;
+    const {
+      patientName,
+      patientAddress,
+      patientContact,
+      doctorId,
+      doctorName,
+      date,
+      time,
+      notes,
+    } = req.body;
 
-    //  Check if doctor already has an appointment at this date & time
+    // Check if doctor already has an appointment at this date & time
     const existingDoctor = await Appointment.findOne({ doctorId, date, time });
     if (existingDoctor) {
       return res.status(400).json({
@@ -15,19 +24,17 @@ export const createAppointment = async (req: Request, res: Response) => {
       });
     }
 
-    // (Optional) Check if patient already has appointment at same time
-    const existingPatient = await Appointment.findOne({ patientId, date, time });
-    if (existingPatient) {
-      return res.status(400).json({
-        success: false,
-        message: "Patient already has another appointment at this time.",
-      });
-    }
+    // Find the max queueNumber for this doctor on this date
+    const lastAppointment = await Appointment.findOne({ doctorId, date }).sort({ queueNumber: -1 });
+    const queueNumber = lastAppointment ? lastAppointment.queueNumber + 1 : 1;
 
-    //  Save new appointment
+    // Save new appointment
     const appointment = await Appointment.create({
-      patientId,
+      patientName,
+      patientAddress,
+      patientContact,
       doctorId,
+      doctorName,
       date,
       time,
       queueNumber,
