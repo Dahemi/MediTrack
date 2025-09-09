@@ -1,19 +1,29 @@
 import { Request, Response } from "express";
 import { Appointment } from "../models/appointment.model.js";
+import User from "../models/user.model.js";
 
 // Create new appointment (with conflict checking)
 export const createAppointment = async (req: Request, res: Response) => {
   try {
-    const {
-      patientName,
-      patientAddress,
-      patientContact,
-      doctorId,
-      doctorName,
-      date,
-      time,
-      notes,
-    } = req.body;
+    const { patientId, doctorId, date, time, queueNumber, notes } = req.body;
+
+    // Verify that the doctorId is actually a doctor
+    const doctor = await User.findOne({ _id: doctorId, userType: "doctor" });
+    if (!doctor) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid doctor ID",
+      });
+    }
+
+    // Verify that the patientId is actually a patient
+    const patient = await User.findOne({ _id: patientId, userType: "patient" });
+    if (!patient) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid patient ID",
+      });
+    }
 
     // Check if doctor already has an appointment at this date & time
     const existingDoctor = await Appointment.findOne({ doctorId, date, time });
@@ -24,57 +34,81 @@ export const createAppointment = async (req: Request, res: Response) => {
       });
     }
 
-    // Find the max queueNumber for this doctor on this date
-    const lastAppointment = await Appointment.findOne({ doctorId, date }).sort({ queueNumber: -1 });
-    const queueNumber = lastAppointment ? lastAppointment.queueNumber + 1 : 1;
+    // Check if patient already has appointment at same time
+    const existingPatient = await Appointment.findOne({
+      patientId,
+      date,
+      time,
+    });
+    if (existingPatient) {
+      return res.status(400).json({
+        success: false,
+        message: "Patient already has another appointment at this time.",
+      });
+    }
 
     // Save new appointment
-    const appointment = await Appointment.create({
-      patientName,
-      patientAddress,
-      patientContact,
+    const appointment = new Appointment({
+      patientId,
       doctorId,
       doctorName,
       date,
       time,
       queueNumber,
       notes,
-      status: "booked",
     });
+
+    await appointment.save();
 
     return res.status(201).json({
       success: true,
-      message: "Appointment booked successfully.",
-      data: appointment,
+      message: "Appointment created successfully",
+      appointment,
     });
-  } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Error creating appointment",
-      error: error.message,
-    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Error creating appointment", error });
   }
 };
 
-// ✅ Get all appointments
-export const getAppointments = async (_req: Request, res: Response) => {
+// Get all appointments
+export const getAppointments = async (req: Request, res: Response) => {
   try {
     const appointments = await Appointment.find()
-      //.populate("patientId", "name email")
-      .populate("doctorId", "name specialization");
+      .populate({
+        path: "patientId",
+        select: "name email userType",
+        match: { userType: "patient" },
+      })
+      .populate({
+        path: "doctorId",
+        select: "name fullName specialization userType",
+        match: { userType: "doctor" },
+      });
 
     return res.status(200).json(appointments);
   } catch (error) {
-    return res.status(500).json({ message: "Error fetching appointments", error });
+    return res
+      .status(500)
+      .json({ message: "Error fetching appointments", error });
   }
 };
 
-// ✅ Get appointment by ID
+// Get appointment by ID
 export const getAppointmentById = async (req: Request, res: Response) => {
   try {
     const appointment = await Appointment.findById(req.params.id)
-      //.populate("patientId", "name email")
-      .populate("doctorId", "name specialization");
+      .populate({
+        path: "patientId",
+        select: "name email userType",
+        match: { userType: "patient" },
+      })
+      .populate({
+        path: "doctorId",
+        select: "name fullName specialization userType",
+        match: { userType: "doctor" },
+      });
 
     if (!appointment) {
       return res.status(404).json({ message: "Appointment not found" });
@@ -82,11 +116,13 @@ export const getAppointmentById = async (req: Request, res: Response) => {
 
     return res.status(200).json(appointment);
   } catch (error) {
-    return res.status(500).json({ message: "Error fetching appointment", error });
+    return res
+      .status(500)
+      .json({ message: "Error fetching appointment", error });
   }
 };
 
-// ✅ Update appointment
+// Update appointment
 export const updateAppointment = async (req: Request, res: Response) => {
   try {
     const appointment = await Appointment.findByIdAndUpdate(
@@ -101,11 +137,13 @@ export const updateAppointment = async (req: Request, res: Response) => {
 
     return res.status(200).json(appointment);
   } catch (error) {
-    return res.status(500).json({ message: "Error updating appointment", error });
+    return res
+      .status(500)
+      .json({ message: "Error updating appointment", error });
   }
 };
 
-// ✅ Update status only
+// Update status only
 export const updateAppointmentStatus = async (req: Request, res: Response) => {
   try {
     const { status } = req.body;
@@ -130,7 +168,7 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
   }
 };
 
-// ✅ Delete appointment
+// Delete appointment
 export const deleteAppointment = async (req: Request, res: Response) => {
   try {
     const appointment = await Appointment.findByIdAndDelete(req.params.id);
@@ -139,8 +177,12 @@ export const deleteAppointment = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Appointment not found" });
     }
 
-    return res.status(200).json({ message: "Appointment deleted successfully" });
+    return res
+      .status(200)
+      .json({ message: "Appointment deleted successfully" });
   } catch (error) {
-    return res.status(500).json({ message: "Error deleting appointment", error });
+    return res
+      .status(500)
+      .json({ message: "Error deleting appointment", error });
   }
 };

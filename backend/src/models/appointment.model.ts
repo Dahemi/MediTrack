@@ -5,6 +5,8 @@ export interface IAppointment extends Document {
   patientAddress: string;
   patientContact: string;
   doctorId: Schema.Types.ObjectId;
+  date: string;
+  time: string;
   doctorName?: string;
   date: string;
   time: string;
@@ -17,11 +19,8 @@ export interface IAppointment extends Document {
 
 const appointmentSchema = new Schema<IAppointment>(
   {
-    patientName: { type: String, required: true },
-    patientAddress: { type: String, required: true },
-    patientContact: { type: String, required: true },
-    doctorId: { type: Schema.Types.ObjectId, ref: "Doctor", required: true },
-    doctorName: { type: String },
+    patientId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    doctorId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     date: { type: String, required: true },
     time: { type: String, required: true },
     status: {
@@ -37,4 +36,7 @@ const appointmentSchema = new Schema<IAppointment>(
   }
 );
 
-export const Appointment = model<IAppointment>("Appointment", appointmentSchema);
+export const Appointment = model<IAppointment>(
+  "Appointment",
+  appointmentSchema
+);

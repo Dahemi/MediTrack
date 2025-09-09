@@ -1,9 +1,7 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import appointmentRoutes from "./routes/appointment.routes.js";
-import authRoutes from "./routes/authRoutes.js";
-import doctorRoutes from "./routes/doctor.routes.js";
-
+import patientRoutes from "./routes/patient.routes.js";
 
 const app: Express = express();
 
@@ -22,10 +20,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-
-app.use("/api/auth", authRoutes);
 app.use("/api/appointment", appointmentRoutes);
-app.use("/api/doctors", doctorRoutes); 
+
+app.use("/api/patient", patientRoutes);
 
 // Health check
 app.get("/api/health", (_req, res) => {
@@ -39,8 +36,16 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 
   res.status(statusCode).json({
     success: false,
-    statusCode,
     message,
+    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+  });
+});
+
+// 404 handler
+app.use("*", (_req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
   });
 });
 
