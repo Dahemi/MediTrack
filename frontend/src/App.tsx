@@ -12,12 +12,21 @@ import "./App.css";
 import DoctorManagement from "./pages/admin/DoctorManagement";
 import DoctorsDirectory from "./pages/user/DoctorsDirectory";
 import DoctorDashboard from "./pages/doctor/DoctorDashboard";
+import AvailableSlots from "./pages/user/AvailableSlots";
 
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
+          {/* Admin Routes */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/verify/:token" element={<Verify />} />
+          <Route path="/doctors" element={<DoctorManagement />} />
+          <Route path="/admin/*" element={<AdminDashboard />} />
+
           {/* Admin Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/register" element={<Register />} />
@@ -34,7 +43,7 @@ function App() {
             element={<AppointmentConfirmation />}
           />
           <Route path="/doctorsdir" element={<DoctorsDirectory />} />
-          {/* Doctor Routes */}
+          <Route path="/doctors/:id/slots" element={<AvailableSlots />} />
           <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
         </Routes>
       </Router>
