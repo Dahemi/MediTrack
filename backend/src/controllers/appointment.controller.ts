@@ -60,7 +60,7 @@ export const createAppointment = async (req: Request, res: Response) => {
 export const getAppointments = async (_req: Request, res: Response) => {
   try {
     const appointments = await Appointment.find()
-      .populate("patientId", "name email")
+      //.populate("patientId", "name email")
       .populate("doctorId", "name specialization");
 
     return res.status(200).json(appointments);
@@ -73,7 +73,7 @@ export const getAppointments = async (_req: Request, res: Response) => {
 export const getAppointmentById = async (req: Request, res: Response) => {
   try {
     const appointment = await Appointment.findById(req.params.id)
-      .populate("patientId", "name email")
+      //.populate("patientId", "name email")
       .populate("doctorId", "name specialization");
 
     if (!appointment) {
