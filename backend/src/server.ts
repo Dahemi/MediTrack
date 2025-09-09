@@ -2,9 +2,9 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
 import express from "express";
-import authRoutes from "./routes/authRoutes.js";
 import doctorRoutes from "./routes/doctor.routes.js";
 import appointmentRoutes from "./routes/appointment.routes.js";
+import patientRoutes from "./routes/patient.routes.js";
 
 dotenv.config();
 
@@ -23,7 +23,7 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Routes
-app.use("/api/auth", authRoutes);
+app.use("/api/patient", patientRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/appointment", appointmentRoutes);
 

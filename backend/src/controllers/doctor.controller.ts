@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import User from "../models/user.model.js";
 
-// Create a new doctor
+// Create a new doctor -- ADMIN ONLY FUNCTION -> Add to route
 export const createDoctor = async (req: Request, res: Response) => {
   try {
     const doctorData = {
