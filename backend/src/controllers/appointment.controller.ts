@@ -5,25 +5,16 @@ import User from "../models/user.model.js";
 // Create new appointment (with conflict checking)
 export const createAppointment = async (req: Request, res: Response) => {
   try {
-    const { patientId, doctorId, date, time, queueNumber, notes } = req.body;
-
-    // Verify that the doctorId is actually a doctor
-    const doctor = await User.findOne({ _id: doctorId, userType: "doctor" });
-    if (!doctor) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid doctor ID",
-      });
-    }
-
-    // Verify that the patientId is actually a patient
-    const patient = await User.findOne({ _id: patientId, userType: "patient" });
-    if (!patient) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid patient ID",
-      });
-    }
+    const {
+      patientName,
+      patientAddress,
+      patientContact,
+      doctorId,
+      doctorName,
+      date,
+      time,
+      notes,
+    } = req.body;
 
     // Check if doctor already has an appointment at this date & time
     const existingDoctor = await Appointment.findOne({ doctorId, date, time });
@@ -34,41 +25,35 @@ export const createAppointment = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if patient already has appointment at same time
-    const existingPatient = await Appointment.findOne({
-      patientId,
-      date,
-      time,
-    });
-    if (existingPatient) {
-      return res.status(400).json({
-        success: false,
-        message: "Patient already has another appointment at this time.",
-      });
-    }
+    // Find the max queueNumber for this doctor on this date
+    const lastAppointment = await Appointment.findOne({ doctorId, date }).sort({ queueNumber: -1 });
+    const queueNumber = lastAppointment ? lastAppointment.queueNumber + 1 : 1;
 
     // Save new appointment
-    const appointment = new Appointment({
-      patientId,
+    const appointment = await Appointment.create({
+      patientName,
+      patientAddress,
+      patientContact,
       doctorId,
       doctorName,
       date,
       time,
       queueNumber,
       notes,
+      status: "booked",
     });
-
-    await appointment.save();
 
     return res.status(201).json({
       success: true,
-      message: "Appointment created successfully",
-      appointment,
+      message: "Appointment booked successfully.",
+      data: appointment,
     });
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Error creating appointment", error });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Error creating appointment",
+      error: error.message,
+    });
   }
 };
 
@@ -76,11 +61,11 @@ export const createAppointment = async (req: Request, res: Response) => {
 export const getAppointments = async (req: Request, res: Response) => {
   try {
     const appointments = await Appointment.find()
-      .populate({
+      /*.populate({
         path: "patientId",
         select: "name email userType",
         match: { userType: "patient" },
-      })
+      })*/
       .populate({
         path: "doctorId",
         select: "name fullName specialization userType",
