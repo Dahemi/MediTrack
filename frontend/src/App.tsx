@@ -27,21 +27,10 @@ function App() {
           <Route path="/doctors" element={<DoctorManagement />} />
           <Route path="/admin/*" element={<AdminDashboard />} />
 
-          {/* Admin Routes */}
-          <Route path="/" element={<HomePage />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/verify/:token" element={<Verify />} />
-          <Route path="/doctors" element={<DoctorManagement />} />
-          <Route path="/admin/*" element={<AdminDashboard />} />
-
           {/* User Routes */}
           <Route path="/user/home" element={<HomePage />} />
           <Route path="/appointment/create" element={<CreateAppointment />} />
-          <Route
-            path="/appointment/confirmation"
-            element={<AppointmentConfirmation />}
-          />
+          <Route path="/appointment/confirmation" element={<AppointmentConfirmation />}/>
           <Route path="/doctorsdir" element={<DoctorsDirectory />} />
           <Route path="/doctors/:id/slots" element={<AvailableSlots />} />
           <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
