@@ -1,67 +1,52 @@
-import axios from 'axios';
-console.log('API URL:', import.meta.env.VITE_API_URL);
-// Create axios instance with base configuration
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  timeout: 10000,
+import axios, { type AxiosInstance } from "axios";
+import { auth, googleProvider } from "../config/firebase";
+import { signInWithPopup } from "firebase/auth";
+
+// Create axios instance
+const api: AxiosInstance = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
-// Request interceptor
-api.interceptors.request.use(
-  (config) => {
-    console.log(`Making ${config.method?.toUpperCase()} request to ${config.url}`);
-    return config;
-  },
-  (error) => {
-    console.error('Request error:', error);
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor
-api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    console.error('Response error:', error.response?.data || error.message);
-    return Promise.reject(error);
-  }
-);
-
 // API Types
-export interface RegisterData {
+export interface FirebaseLoginData {
+  uid: string;
+  email: string;
   name: string;
-  email: string;
-  password: string;
-}
-
-export interface LoginData {
-  email: string;
-  password: string;
+  photoURL?: string;
+  idToken: string;
 }
 
 export interface ApiResponse<T = any> {
-  doctors: never[];
   success: boolean;
   message: string;
   data?: T;
 }
 
-export interface PatientData {
+export interface UserData {
   id: string;
   name: string;
   email: string;
-  isVerified: boolean;
+  userType: "patient" | "doctor" | "admin";
+  photoURL?: string;
+  firebaseUid?: string;
+  // Doctor-specific fields
+  fullName?: string;
+  specialization?: string;
+  yearsOfExperience?: number;
+  contactDetails?: {
+    email: string;
+    phone: string;
+  };
+  profilePictureUrl?: string;
+  availability?: DoctorAvailability[];
 }
 
-// Doctor Types
 export interface DoctorAvailability {
   day: string;
-  date: string; // ISO string
+  date: string;
   startTime: string;
   endTime: string;
   slots: number;
@@ -79,68 +64,212 @@ export interface DoctorData {
   profilePictureUrl?: string;
   availability: DoctorAvailability[];
 }
-// API Functions
-export const registerPatient = async (data: RegisterData): Promise<ApiResponse<{ patient: PatientData }>> => {
+
+export interface DoctorRegisterData {
+  name: string;
+  email: string;
+  password: string;
+  userType: "doctor";
+  fullName: string;
+  specialization: string;
+  yearsOfExperience: number;
+  contactDetails: {
+    email: string;
+    phone: string;
+  };
+  profilePictureUrl?: string;
+  availability?: DoctorAvailability[];
+}
+
+export interface DoctorLoginData {
+  email: string;
+  password: string;
+}
+
+export interface RegisterData {
+  name: string;
+  email: string;
+  password: string;
+}
+
+export interface LoginData {
+  email: string;
+  password: string;
+}
+
+// Firebase Google Authentication for Patients
+export const loginPatientWithGoogle = async (): Promise<
+  ApiResponse<{ user: UserData }>
+> => {
   try {
-    const response = await api.post('/auth/signup', data);
+    const result = await signInWithPopup(auth, googleProvider);
+    const user = result.user;
+
+    const idToken = await user.getIdToken();
+
+    const firebaseData: FirebaseLoginData = {
+      uid: user.uid,
+      email: user.email!,
+      name: user.displayName || user.email!.split("@")[0],
+      photoURL: user.photoURL || undefined,
+      idToken,
+    };
+
+    const response = await api.post("/patient/firebase-login", firebaseData);
     return response.data;
   } catch (error: any) {
-    throw error.response?.data || { success: false, message: 'Network error occurred' };
+    throw {
+      success: false,
+      message: error.message || "Google authentication failed",
+    };
   }
 };
 
-export const verifyPatient = async (token: string): Promise<ApiResponse<{ patient: PatientData }>> => {
+// Traditional Patient Authentication
+export const registerPatient = async (
+  data: RegisterData
+): Promise<ApiResponse<{ patient: UserData }>> => {
+  try {
+    const response = await api.post("/auth/signup", data);
+    return response.data;
+  } catch (error: any) {
+    throw (
+      error.response?.data || {
+        success: false,
+        message: "Network error occurred",
+      }
+    );
+  }
+};
+
+export const loginPatient = async (
+  data: LoginData
+): Promise<ApiResponse<{ patient: UserData }>> => {
+  try {
+    const response = await api.post("/auth/login", data);
+    return response.data;
+  } catch (error: any) {
+    throw (
+      error.response?.data || {
+        success: false,
+        message: "Network error occurred",
+      }
+    );
+  }
+};
+
+export const verifyPatient = async (
+  token: string
+): Promise<ApiResponse<{ patient: UserData }>> => {
   try {
     const response = await api.get(`/auth/verify/${token}`);
     return response.data;
   } catch (error: any) {
-    throw error.response?.data || { success: false, message: 'Network error occurred' };
+    throw (
+      error.response?.data || {
+        success: false,
+        message: "Network error occurred",
+      }
+    );
   }
 };
 
-export const loginPatient = async (data: LoginData): Promise<ApiResponse<{ patient: PatientData }>> => {
+export const resendVerification = async (
+  email: string
+): Promise<ApiResponse> => {
   try {
-    const response = await api.post('/auth/login', data);
+    const response = await api.post("/auth/resend-verification", { email });
     return response.data;
   } catch (error: any) {
-    throw error.response?.data || { success: false, message: 'Network error occurred' };
+    throw (
+      error.response?.data || {
+        success: false,
+        message: "Network error occurred",
+      }
+    );
   }
 };
 
-export const resendVerification = async (email: string): Promise<ApiResponse> => {
+// Doctor Authentication (Traditional)
+export const registerDoctor = async (
+  data: DoctorRegisterData
+): Promise<ApiResponse<{ user: UserData }>> => {
   try {
-    const response = await api.post('/auth/resend-verification', { email });
+    const response = await api.post("/patient/doctor-signup", data);
     return response.data;
   } catch (error: any) {
-    throw error.response?.data || { success: false, message: 'Network error occurred' };
+    throw (
+      error.response?.data || {
+        success: false,
+        message: "Network error occurred",
+      }
+    );
   }
 };
 
-// Doctor API
-export const createDoctor = async (data: DoctorData): Promise<ApiResponse<{ doctor: DoctorData }>> => {
+export const loginDoctor = async (
+  data: DoctorLoginData
+): Promise<ApiResponse<{ user: UserData }>> => {
   try {
-    const response = await api.post('/doctors', data);
+    const response = await api.post("/patient/doctor-login", data);
     return response.data;
   } catch (error: any) {
-    throw error.response?.data || { success: false, message: 'Network error occurred' };
+    throw (
+      error.response?.data || {
+        success: false,
+        message: "Network error occurred",
+      }
+    );
   }
 };
 
-export const getDoctors = async (): Promise<ApiResponse<{ doctors: DoctorData[] }>> => {
+// Doctor Management Functions
+export const createDoctor = async (
+  data: DoctorData
+): Promise<ApiResponse<{ doctor: DoctorData }>> => {
   try {
-    const response = await api.get('/doctors');
+    const response = await api.post("/doctors", data);
     return response.data;
   } catch (error: any) {
-    throw error.response?.data || { success: false, message: 'Network error occurred' };
+    throw (
+      error.response?.data || {
+        success: false,
+        message: "Network error occurred",
+      }
+    );
   }
 };
 
-export const updateDoctor = async (id: string, data: DoctorData): Promise<ApiResponse<{ doctor: DoctorData }>> => {
+export const getDoctors = async (): Promise<
+  ApiResponse<{ doctors: DoctorData[] }>
+> => {
+  try {
+    const response = await api.get("/doctors");
+    return response.data;
+  } catch (error: any) {
+    throw (
+      error.response?.data || {
+        success: false,
+        message: "Network error occurred",
+      }
+    );
+  }
+};
+
+export const updateDoctor = async (
+  id: string,
+  data: DoctorData
+): Promise<ApiResponse<{ doctor: DoctorData }>> => {
   try {
     const response = await api.put(`/doctors/${id}`, data);
     return response.data;
   } catch (error: any) {
-    throw error.response?.data || { success: false, message: 'Network error occurred' };
+    throw (
+      error.response?.data || {
+        success: false,
+        message: "Network error occurred",
+      }
+    );
   }
 };
 
@@ -149,7 +278,12 @@ export const deleteDoctor = async (id: string): Promise<ApiResponse> => {
     const response = await api.delete(`/doctors/${id}`);
     return response.data;
   } catch (error: any) {
-    throw error.response?.data || { success: false, message: 'Network error occurred' };
+    throw (
+      error.response?.data || {
+        success: false,
+        message: "Network error occurred",
+      }
+    );
   }
 };
 

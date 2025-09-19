@@ -1,22 +1,35 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 
 interface AppointmentFormData {
-  patientId: string;
+  patientName: string;
+  patientAddress: string;
+  patientContact: string;
   doctorId: string;
+  doctorName: string;
   date: string;
   time: string;
   notes: string;
 }
 
 const CreateAppointment: React.FC = () => {
+  const location = useLocation();
   const navigate = useNavigate();
+
+  // Get doctor and slot info from navigation state
+  const doctor = location.state?.doctor;
+  const date = location.state?.date || format(new Date(), 'yyyy-MM-dd');
+  const time = location.state?.time || '';
+
   const [formData, setFormData] = useState<AppointmentFormData>({
-    patientId: '',
-    doctorId: '',
-    date: format(new Date(), 'yyyy-MM-dd'),
-    time: '',
+    patientName: '',
+    patientAddress: '',
+    patientContact: '',
+    doctorId: doctor?._id || '',
+    doctorName: doctor?.fullName || '',
+    date,
+    time,
     notes: ''
   });
   const [loading, setLoading] = useState(false);
@@ -42,15 +55,15 @@ const CreateAppointment: React.FC = () => {
         },
         body: JSON.stringify({
           ...formData,
-          queueNumber: Math.floor(Math.random() * 100) + 1 // Temporary queue number generation
+          // You may want to add queueNumber or other fields here
         })
       });
 
       const data = await response.json();
-      
+
       if (response.ok) {
-        navigate('/appointment/confirmation', { 
-          state: { appointment: data.data } 
+        navigate('/appointment/confirmation', {
+          state: { appointment: data.data }
         });
       } else {
         setError(data.message || 'Failed to create appointment');
@@ -80,77 +93,80 @@ const CreateAppointment: React.FC = () => {
 
           <div className="space-y-4">
             <div>
-              <label htmlFor="patientId" className="block text-sm font-medium text-gray-700">
-                Patient ID
-              </label>
+              <label className="block text-sm font-medium text-gray-700">Patient Name</label>
               <input
-                id="patientId"
-                name="patientId"
+                name="patientName"
                 type="text"
                 required
-                value={formData.patientId}
+                value={formData.patientName}
                 onChange={handleChange}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
               />
             </div>
-
             <div>
-              <label htmlFor="doctorId" className="block text-sm font-medium text-gray-700">
-                Doctor ID
-              </label>
+              <label className="block text-sm font-medium text-gray-700">Address</label>
               <input
-                id="doctorId"
-                name="doctorId"
+                name="patientAddress"
                 type="text"
                 required
-                value={formData.doctorId}
+                value={formData.patientAddress}
                 onChange={handleChange}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
               />
             </div>
-
             <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700">
-                Date
-              </label>
+              <label className="block text-sm font-medium text-gray-700">Contact Number</label>
               <input
-                id="date"
-                name="date"
-                type="date"
+                name="patientContact"
+                type="text"
                 required
-                value={formData.date}
+                value={formData.patientContact}
                 onChange={handleChange}
-                min={format(new Date(), 'yyyy-MM-dd')}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
               />
             </div>
-
             <div>
-              <label htmlFor="time" className="block text-sm font-medium text-gray-700">
-                Time
-              </label>
+              <label className="block text-sm font-medium text-gray-700">Doctor</label>
               <input
-                id="time"
-                name="time"
-                type="time"
-                required
-                value={formData.time}
-                onChange={handleChange}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                name="doctorName"
+                type="text"
+                value={formData.doctorName}
+                disabled
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 bg-gray-100"
               />
             </div>
-
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Date</label>
+                <input
+                  name="date"
+                  type="date"
+                  required
+                  value={formData.date}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Time</label>
+                <input
+                  name="time"
+                  type="time"
+                  required
+                  value={formData.time}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+                />
+              </div>
+            </div>
             <div>
-              <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-                Notes (Optional)
-              </label>
+              <label className="block text-sm font-medium text-gray-700">Notes (Optional)</label>
               <textarea
-                id="notes"
                 name="notes"
                 value={formData.notes}
                 onChange={handleChange}
                 rows={3}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
               />
             </div>
           </div>
@@ -158,18 +174,11 @@ const CreateAppointment: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+            className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 ${
               loading ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
-            {loading ? (
-              <div className="flex items-center">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                Creating Appointment...
-              </div>
-            ) : (
-              'Book Appointment'
-            )}
+            {loading ? 'Booking...' : 'Book Appointment'}
           </button>
         </form>
       </div>

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon --exec tsx src/server.ts",
     "start": "tsx src/server.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "create-test-doctor": "tsx src/scripts/createTestDoctor.ts"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +20,7 @@
     "crypto": "^1.0.1",
     "dotenv": "^17.2.1",
     "express": "^4.21.2",
+    "firebase-admin": "^13.5.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.18.0",
     "mongoose": "^8.17.2",
