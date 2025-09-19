@@ -6,6 +6,7 @@ import User from "../models/user.model.js";
 export const createAppointment = async (req: Request, res: Response) => {
   try {
     const {
+      patientId, 
       patientName,
       patientAddress,
       patientContact,
@@ -31,6 +32,7 @@ export const createAppointment = async (req: Request, res: Response) => {
 
     // Save new appointment
     const appointment = await Appointment.create({
+      patientId, // Add this
       patientName,
       patientAddress,
       patientContact,

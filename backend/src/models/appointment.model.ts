@@ -6,6 +6,7 @@ interface IRescheduleHistory {
 }
 
 export interface IAppointment extends Document {
+  patientId: Schema.Types.ObjectId;
   patientName: string;
   patientAddress: string;
   patientContact: string;
@@ -32,6 +33,7 @@ export interface IAppointment extends Document {
 
 const appointmentSchema = new Schema<IAppointment>(
   {
+    patientId: { type: Schema.Types.ObjectId, ref: "User", required: true }, // Add this
     patientName: { type: String, required: true },
     patientAddress: { type: String, required: true },
     patientContact: { type: String, required: true },

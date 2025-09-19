@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import { useAuth } from '../../context/AuthContext'; // Add this import
 
 interface AppointmentFormData {
+  patientId: string; // Add patientId field
   patientName: string;
   patientAddress: string;
   patientContact: string;
@@ -16,14 +18,16 @@ interface AppointmentFormData {
 const CreateAppointment: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-
+  const { user } = useAuth(); // Get logged in user from context
+  
   // Get doctor and slot info from navigation state
   const doctor = location.state?.doctor;
   const date = location.state?.date || format(new Date(), 'yyyy-MM-dd');
   const time = location.state?.time || '';
 
   const [formData, setFormData] = useState<AppointmentFormData>({
-    patientName: '',
+    patientId: user?.id || '', // Add user ID
+    patientName: user?.name || '', // Pre-fill name if available
     patientAddress: '',
     patientContact: '',
     doctorId: doctor?._id || '',
@@ -55,7 +59,7 @@ const CreateAppointment: React.FC = () => {
         },
         body: JSON.stringify({
           ...formData,
-          // You may want to add queueNumber or other fields here
+          patientId: user?.id // Make sure to send the user ID
         })
       });
 
