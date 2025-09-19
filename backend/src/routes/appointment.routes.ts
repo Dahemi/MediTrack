@@ -7,6 +7,7 @@ import {
   deleteAppointment,
   cancelAppointment,
   rescheduleAppointment,
+  getAppointmentsByPatient,
 } from "../controllers/appointment.controller.js";
 const router: Router = express.Router();
 
@@ -24,6 +25,8 @@ router.delete("/:id", deleteAppointment);
 router.post('/:id/cancel', cancelAppointment);
 // Reschedule appointment
 router.post('/:id/reschedule', rescheduleAppointment);
+// Get appointments by patient ID
+router.get("/patient/:patientId", getAppointmentsByPatient);
 
 
 export default router;

@@ -316,3 +316,45 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
     });
   }
 };
+
+// Get appointments by patient ID
+export const getAppointmentsByPatient = async (req: Request, res: Response) => {
+  try {
+    const { patientId } = req.params;
+    console.log('Fetching appointments for patient:', patientId);
+
+    if (!patientId) {
+      return res.status(400).json({
+        success: false,
+        message: "Patient ID is required"
+      });
+    }
+
+    // Simplified query without populate to test
+    const appointments = await Appointment.find({ 
+      patientId: patientId // Make sure patientId matches exactly
+    }).sort({ date: -1, time: -1 });
+
+    console.log('Raw appointments found:', appointments); // Debug log
+
+    if (!appointments) {
+      return res.status(200).json({
+        success: true,
+        data: [] // Return empty array if no appointments
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: appointments
+    });
+
+  } catch (error: any) {
+    console.error('Error details:', error); // More detailed error logging
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching appointments",
+      error: error.message
+    });
+  }
+};

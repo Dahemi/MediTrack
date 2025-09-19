@@ -51,7 +51,15 @@ const CreateAppointment: React.FC = () => {
     setLoading(true);
     setError('');
 
+    if (!user?.id) {
+      setError('You must be logged in to create an appointment');
+      setLoading(false);
+      return;
+    }
+
     try {
+      console.log('Creating appointment with data:', { ...formData, patientId: user.id }); // Debug log
+      
       const response = await fetch(`${import.meta.env.VITE_API_URL}/appointment`, {
         method: 'POST',
         headers: {
@@ -59,11 +67,12 @@ const CreateAppointment: React.FC = () => {
         },
         body: JSON.stringify({
           ...formData,
-          patientId: user?.id // Make sure to send the user ID
+          patientId: user.id
         })
       });
 
       const data = await response.json();
+      console.log('Appointment creation response:', data); // Debug log
 
       if (response.ok) {
         navigate('/appointment/confirmation', {
