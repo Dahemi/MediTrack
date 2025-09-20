@@ -562,7 +562,7 @@ export const getQueueAnalytics = async (req: Request, res: Response) => {
   try {
     const { doctorId, date } = req.params;
 
-    const analytics = await QueueService.getQueueAnalytics(doctorId, date);
+    const analytics = await QueueService.getQueueAnalytics(doctorId as string, date as string);
 
     return res.status(200).json({
       success: true,
