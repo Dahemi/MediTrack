@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/user/Navbar';
 import Footer from '../../components/Footer';
+
+// Add modal state and selected appointment
+interface ModalState {
+  isOpen: boolean;
+  type: 'reschedule' | 'cancel' | null;
+  appointmentId: string | null;
+}
 
 interface Appointment {
   _id: string;
@@ -16,9 +24,15 @@ interface Appointment {
 
 const MyAppointments: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [modal, setModal] = useState<ModalState>({
+    isOpen: false,
+    type: null,
+    appointmentId: null
+  });
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -68,6 +82,96 @@ const MyAppointments: React.FC = () => {
     }
   };
 
+  const handleReschedule = async () => {
+    if (!modal.appointmentId) return;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/appointment/${modal.appointmentId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          reason: 'Rescheduling appointment',
+          cancelledBy: 'patient'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to cancel appointment');
+      }
+
+      // Close modal and navigate to doctors directory
+      setModal({ isOpen: false, type: null, appointmentId: null });
+      navigate('/doctorsdir');
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!modal.appointmentId) return;
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/appointment/${modal.appointmentId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          reason: 'Cancelled by patient',
+          cancelledBy: 'patient'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to cancel appointment');
+      }
+
+      // Close modal and refresh appointments
+      setModal({ isOpen: false, type: null, appointmentId: null });
+      window.location.reload();
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+    }
+  };
+
+  // Add this JSX for the modal
+  const Modal = () => {
+    if (!modal.isOpen) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            {modal.type === 'reschedule' 
+              ? 'Reschedule Appointment'
+              : 'Cancel Appointment'}
+          </h3>
+          <p className="text-gray-600 mb-6">
+            {modal.type === 'reschedule'
+              ? 'This appointment will be cancelled and you will be redirected to book a new appointment.'
+              : 'Your appointment will be cancelled. This action cannot be undone.'}
+          </p>
+          <div className="flex justify-end space-x-4">
+            <button
+              onClick={() => setModal({ isOpen: false, type: null, appointmentId: null })}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            >
+              No, Keep it
+            </button>
+            <button
+              onClick={modal.type === 'reschedule' ? handleReschedule : handleCancel}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            >
+              Yes, {modal.type === 'reschedule' ? 'Reschedule' : 'Cancel'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50">
       <Navbar />
@@ -103,6 +207,7 @@ const MyAppointments: React.FC = () => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date & Time</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -128,6 +233,34 @@ const MyAppointments: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-500">{appointment.notes || '-'}</div>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex space-x-2">
+                          {appointment.status === 'booked' && (
+                            <>
+                              <button
+                                onClick={() => setModal({ 
+                                  isOpen: true, 
+                                  type: 'reschedule', 
+                                  appointmentId: appointment._id 
+                                })}
+                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                              >
+                                Reschedule
+                              </button>
+                              <button
+                                onClick={() => setModal({ 
+                                  isOpen: true, 
+                                  type: 'cancel', 
+                                  appointmentId: appointment._id 
+                                })}
+                                className="text-red-600 hover:text-red-800 text-sm font-medium"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -137,6 +270,7 @@ const MyAppointments: React.FC = () => {
         )}
       </main>
       <Footer />
+      <Modal />
     </div>
   );
 };
