@@ -141,8 +141,8 @@ const MyAppointments: React.FC = () => {
     if (!modal.isOpen) return null;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+      <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
+        <div className="bg-white/90 backdrop-filter backdrop-blur-sm rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             {modal.type === 'reschedule' 
               ? 'Reschedule Appointment'
@@ -156,13 +156,17 @@ const MyAppointments: React.FC = () => {
           <div className="flex justify-end space-x-4">
             <button
               onClick={() => setModal({ isOpen: false, type: null, appointmentId: null })}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
             >
               No, Keep it
             </button>
             <button
               onClick={modal.type === 'reschedule' ? handleReschedule : handleCancel}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              className={`px-4 py-2 text-white rounded-lg transition-colors ${
+                modal.type === 'reschedule' 
+                  ? 'bg-blue-600 hover:bg-blue-700'
+                  : 'bg-red-600 hover:bg-red-700'
+              }`}
             >
               Yes, {modal.type === 'reschedule' ? 'Reschedule' : 'Cancel'}
             </button>
