@@ -95,7 +95,7 @@ const Navbar: React.FC = () => {
                       <p className="text-sm text-gray-500">{user.email}</p>
                     </div>
                     <Link
-                      to="/appointment/create"
+                      to="/doctorsdir"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                       onClick={() => setShowDropdown(false)}
                     >

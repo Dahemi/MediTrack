@@ -26,6 +26,15 @@ export const createAppointment = async (req: Request, res: Response) => {
       });
     }
 
+    // Check if patient already has appointment at same time
+    const existingPatient = await Appointment.findOne({ patientId, date, time });
+    if (existingPatient) {
+      return res.status(400).json({
+        success: false,
+        message: "Patient already has another appointment at this time.",
+      });
+    }
+
     // Find the max queueNumber for this doctor on this date
     const lastAppointment = await Appointment.findOne({ doctorId, date }).sort({ queueNumber: -1 });
     const queueNumber = lastAppointment ? lastAppointment.queueNumber + 1 : 1;
