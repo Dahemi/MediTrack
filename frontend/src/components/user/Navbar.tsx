@@ -20,7 +20,7 @@ const Navbar: React.FC = () => {
 
           <div className="hidden md:flex space-x-8">
             <a
-              href="#home"
+              href="/"
               className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
             >
               Home
