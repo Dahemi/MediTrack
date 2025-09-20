@@ -1,6 +1,17 @@
 import React from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import api from "../../services/api";
+import { format } from "date-fns";
+
+type Appointment = {
+  _id: string;
+  patientName: string;
+  time: string;
+  queueNumber: number;
+  status: "booked" | "in_session" | "completed" | "cancelled";
+};
 
 const DoctorDashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -10,7 +21,30 @@ const DoctorDashboard: React.FC = () => {
     logout();
     navigate("/login");
   };
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
+ const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (!user?.id) return;
+    setLoading(true);
+    api
+      .get(`/appointment/doctor/${user.id}/date/${selectedDate}`)
+      .then((res) => setAppointments(res.data.appointments || []))
+      .finally(() => setLoading(false));
+  }, [selectedDate, user?.id]);
+
+  const handleStatusChange = async (id: string, status: string) => {
+    await api.put(`/appointment/${id}`, { status });
+    if (!user?.id) return;
+    const res = await api.get(`/appointment/doctor/${user.id}/date/${selectedDate}`);
+    setAppointments(res.data.appointments || []);
+  };
+
+const inSession = appointments.find((a) => a.status === "in_session");
+const nextInQueue = appointments.find(
+  (a) => a.status === "booked" && (!inSession || a.queueNumber > inSession.queueNumber)
+);
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50">
       {/* Header */}
@@ -305,6 +339,120 @@ const DoctorDashboard: React.FC = () => {
               View Full Schedule →
             </button>
           </div>
+        </div>
+        {/* Appointment Queue Management */}
+        <div className="bg-white rounded-lg shadow-xl border border-blue-100 p-8 mt-12">
+          <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+            <svg className="w-7 h-7 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Appointment Queue
+          </h3>
+          <div className="flex flex-col md:flex-row md:items-end gap-4 mb-8">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select Date</label>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={e => setSelectedDate(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+          </div>
+          {loading ? (
+            <div className="text-center text-blue-600 py-12">Loading appointments...</div>
+          ) : appointments.length === 0 ? (
+            <div className="text-center text-gray-500 py-12">No appointments for this date.</div>
+          ) : (
+            <div className="space-y-6">
+              {/* Current Session */}
+              {inSession && (
+                <div className="p-6 bg-green-50 border border-green-200 rounded-xl mb-6 flex items-center justify-between">
+                  <div>
+                    <div className="text-lg font-bold text-green-800 mb-1">In Session</div>
+                    <div className="font-semibold text-gray-900 text-xl">{inSession.patientName}</div>
+                    <div className="text-sm text-gray-600">Time: {inSession.time}</div>
+                  </div>
+                  <button
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg font-semibold transition"
+                    onClick={() => handleStatusChange(inSession._id, "completed")}
+                  >
+                    Mark Completed
+                  </button>
+                </div>
+              )}
+              {/* Next in Queue */}
+              {nextInQueue && !inSession && (
+                <div className="p-6 bg-blue-50 border border-blue-200 rounded-xl mb-6 flex items-center justify-between">
+                  <div>
+                    <div className="text-lg font-bold text-blue-800 mb-1">Next in Queue</div>
+                    <div className="font-semibold text-gray-900 text-xl">{nextInQueue.patientName}</div>
+                    <div className="text-sm text-gray-600">Time: {nextInQueue.time}</div>
+                  </div>
+                  <button
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition"
+                    onClick={() => handleStatusChange(nextInQueue._id, "in_session")}
+                  >
+                    Start Session
+                  </button>
+                </div>
+              )}
+              {/* Full Queue List */}
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 rounded-lg shadow">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Queue</th>
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Patient</th>
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Time</th>
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
+                      <th className="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {appointments.map(a => (
+                      <tr key={a._id} className="hover:bg-blue-50 transition">
+                        <td className="px-4 py-2 font-bold text-blue-700">{a.queueNumber}</td>
+                        <td className="px-4 py-2 font-semibold text-gray-900">{a.patientName}</td>
+                        <td className="px-4 py-2 text-gray-700">{a.time}</td>
+                        <td className="px-4 py-2">
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            a.status === "in_session"
+                              ? "bg-green-100 text-green-800"
+                              : a.status === "completed"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : a.status === "booked"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}>
+                            {a.status.replace("_", " ")}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2">
+                          {a.status === "booked" && !inSession && (
+                            <button
+                              className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded-lg text-xs font-semibold"
+                              onClick={() => handleStatusChange(a._id, "in_session")}
+                            >
+                              Start Session
+                            </button>
+                          )}
+                          {a.status === "in_session" && (
+                            <button
+                              className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-1 rounded-lg text-xs font-semibold"
+                              onClick={() => handleStatusChange(a._id, "completed")}
+                            >
+                              Mark Completed
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
