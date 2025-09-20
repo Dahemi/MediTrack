@@ -1,10 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import QueueControl from "../../components/doctor/QueueControl";
+import AdvancedQueueManagement from "../../components/doctor/AdvancedQueueManagement";
 
 const DoctorDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [activeTab, setActiveTab] = useState<'basic' | 'advanced'>('basic');
 
   const handleLogout = () => {
     logout();
@@ -251,6 +256,59 @@ const DoctorDashboard: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Queue Management */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Queue Management</h3>
+            <div className="flex items-center space-x-4">
+              <label className="text-sm font-medium text-gray-700">Date:</label>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Queue Management Tabs */}
+          <div className="mb-6">
+            <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+              <button
+                onClick={() => setActiveTab('basic')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'basic'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Basic Control
+              </button>
+              <button
+                onClick={() => setActiveTab('advanced')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'advanced'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Advanced Management
+              </button>
+            </div>
+          </div>
+          
+          {user?.id && (
+            <>
+              {activeTab === 'basic' && (
+                <QueueControl doctorId={user.id} date={selectedDate} />
+              )}
+              {activeTab === 'advanced' && (
+                <AdvancedQueueManagement doctorId={user.id} date={selectedDate} />
+              )}
+            </>
+          )}
         </div>
 
         {/* Today's Schedule Preview */}
