@@ -513,7 +513,7 @@ export const addWalkInPatient = async (req: Request, res: Response) => {
     const { doctorId, date } = req.params;
     const patientData = req.body;
 
-    const walkInAppointment = await QueueService.addWalkInPatient(doctorId, date, patientData);
+    const walkInAppointment = await QueueService.addWalkInPatient(doctorId as string, date as string, patientData);
 
     return res.status(201).json({
       success: true,
@@ -535,7 +535,7 @@ export const skipPatient = async (req: Request, res: Response) => {
     const { appointmentId } = req.params;
     const { reason } = req.body;
 
-    const success = await QueueService.skipPatient(appointmentId, reason);
+    const success = await QueueService.skipPatient(appointmentId as string, reason);
 
     if (success) {
       return res.status(200).json({
