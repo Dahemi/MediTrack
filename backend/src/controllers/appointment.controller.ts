@@ -1,8 +1,33 @@
 import { Request, Response } from "express";
 import { Appointment } from "../models/appointment.model.js";
-import User from "../models/user.model.js";
+import User, { IUser } from "../models/user.model.js";
+import { Document } from "mongoose";
 
-// Create new appointment (with conflict checking)
+// Helper to get start time for doctor on a given date
+function getDoctorStartTime(doctor: Document<unknown, {}, IUser, {}, {}> & IUser & Required<{ _id: unknown; }> & { __v: number; }, date: any) {
+  if (!doctor.availability) return null;
+  const avail = doctor.availability.find((a: { date: string | Date; startTime: string }) => {
+    // Compare date only (YYYY-MM-DD)
+    const availDate = typeof a.date === "string" ? a.date.split("T")[0] : (a.date as Date).toISOString().split("T")[0];
+    return availDate === date;
+  });
+  return avail ? avail.startTime : null;
+}
+
+// Helper to calculate slot index
+function getSlotIndex(startTime: string, bookedTime: string) {
+  // Both in "HH:mm" format
+  const [startHour, startMinRaw] = startTime.split(":");
+  const [bookedHour, bookedMinRaw] = bookedTime.split(":");
+  const startHourNum = Number(startHour);
+  const startMinNum = startMinRaw !== undefined ? Number(startMinRaw) : 0;
+  const bookedHourNum = Number(bookedHour);
+  const bookedMinNum = bookedMinRaw !== undefined ? Number(bookedMinRaw) : 0;
+  const startTotalMin = startHourNum * 60 + startMinNum;
+  const bookedTotalMin = bookedHourNum * 60 + bookedMinNum;
+  return Math.floor((bookedTotalMin - startTotalMin) / 30);
+}
+
 export const createAppointment = async (req: Request, res: Response) => {
   try {
     const {
@@ -12,8 +37,8 @@ export const createAppointment = async (req: Request, res: Response) => {
       patientContact,
       doctorId,
       doctorName,
-      date,
-      time,
+      date, // "YYYY-MM-DD"
+      time, // "HH:mm"
       notes,
     } = req.body;
 
@@ -37,7 +62,22 @@ export const createAppointment = async (req: Request, res: Response) => {
 
     // Find the max queueNumber for this doctor on this date
     const lastAppointment = await Appointment.findOne({ doctorId, date }).sort({ queueNumber: -1 });
-    const queueNumber = lastAppointment ? lastAppointment.queueNumber + 1 : 1;
+    // Get doctor availability for the date
+    const doctor = await User.findById(doctorId);
+    if (!doctor) {
+      return res.status(404).json({ success: false, message: "Doctor not found" });
+    }
+    const startTime = getDoctorStartTime(doctor, date);
+    if (!startTime) {
+      return res.status(400).json({ success: false, message: "Doctor not available on this date" });
+    }
+
+    // Calculate queue number based on slot index
+    const slotIndex = getSlotIndex(startTime, time);
+    if (slotIndex < 0) {
+      return res.status(400).json({ success: false, message: "Invalid booking time" });
+    }
+    const queueNumber = slotIndex + 1;
 
     // Save new appointment
     const appointment = await Appointment.create({
@@ -143,21 +183,17 @@ export const updateAppointment = async (req: Request, res: Response) => {
 export const updateAppointmentStatus = async (req: Request, res: Response) => {
   try {
     const { status } = req.body;
-
     if (!["booked", "in_session", "completed", "cancelled"].includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
     }
-
     const appointment = await Appointment.findByIdAndUpdate(
       req.params.id,
       { status },
       { new: true }
-    );
-
+    ).select("_id patientName time queueNumber status");
     if (!appointment) {
       return res.status(404).json({ message: "Appointment not found" });
     }
-
     return res.status(200).json(appointment);
   } catch (error) {
     return res.status(500).json({ message: "Error updating status", error });
@@ -365,5 +401,18 @@ export const getAppointmentsByPatient = async (req: Request, res: Response) => {
       message: "Error fetching appointments",
       error: error.message
     });
+  }
+};
+export const getDoctorAppointmentsByDate = async (req: Request, res: Response) => {
+  try {
+    const { doctorId, date } = req.params;
+    const appointments = await Appointment.find({ doctorId, date })
+      .sort({ queueNumber: 1 })
+      .select("_id patientName time queueNumber status") // Only select needed fields
+      // .populate({ ... }) // Only if you need doctor details
+
+    res.json({ success: true, appointments });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error fetching appointments", error });
   }
 };

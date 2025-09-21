@@ -8,9 +8,11 @@ import {
   cancelAppointment,
   rescheduleAppointment,
   getAppointmentsByPatient,
+  getDoctorAppointmentsByDate,
 } from "../controllers/appointment.controller.js";
 const router: Router = express.Router();
-
+// Get appointments for a specific doctor on a specific date
+router.get("/doctor/:doctorId/date/:date", getDoctorAppointmentsByDate);
 // Create new appointment
 router.post("/", createAppointment);
 // Get all appointments
