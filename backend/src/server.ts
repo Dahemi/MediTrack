@@ -5,6 +5,7 @@ import express from "express";
 import doctorRoutes from "./routes/doctor.routes.js";
 import appointmentRoutes from "./routes/appointment.routes.js";
 import patientRoutes from "./routes/patient.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ mongoose
 app.use("/api/patient", patientRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/appointment", appointmentRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Basic API endpoint
 app.get("/api/health", (_req, res) => {
