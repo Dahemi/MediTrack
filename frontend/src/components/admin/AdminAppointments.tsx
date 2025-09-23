@@ -172,7 +172,7 @@ const AdminAppointments: React.FC = () => {
           {/* Date Filter */}
           <div className="flex-1">
             <div className="relative">
-              <CalendarDaysIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <CalendarDaysIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
               <input
                 type="date"
                 value={searchDate}
@@ -180,6 +180,8 @@ const AdminAppointments: React.FC = () => {
                   setSearchDate(e.target.value);
                   setCurrentPage(1);
                 }}
+                onFocus={(e) => (e.currentTarget as any).showPicker && (e.currentTarget as any).showPicker()}
+                onClick={(e) => (e.currentTarget as any).showPicker && (e.currentTarget as any).showPicker()}
                 className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -214,7 +216,7 @@ const AdminAppointments: React.FC = () => {
       {/* Appointments Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200 text-left">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

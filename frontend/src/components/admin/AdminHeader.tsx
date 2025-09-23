@@ -98,13 +98,20 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
                 <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
                   {/* Admin info */}
                   <div className="px-4 py-3 border-b border-gray-200">
-                    <p className="text-sm font-medium text-gray-900">
-                      {admin?.fullName}
-                    </p>
-                    <p className="text-sm text-gray-500">{admin?.email}</p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      Last login: {formatLastLogin(admin?.lastLogin)}
-                    </p>
+                    <div className="flex items-center space-x-3">
+                      <div className="h-12 w-12 rounded-full bg-blue-600 flex items-center justify-center text-white text-lg">
+                        {(admin?.fullName || admin?.username || "A").charAt(0)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {admin?.fullName || admin?.username}
+                        </p>
+                        <p className="text-sm text-gray-500">{admin?.email}</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Last login: {formatLastLogin(admin?.lastLogin)}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Menu items */}
