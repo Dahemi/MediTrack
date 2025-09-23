@@ -500,12 +500,24 @@ export const updateDoctorByAdmin = async (req: Request, res: Response): Promise<
     doctor.profilePictureUrl = profilePictureUrl || "";
 
     // Only update password if provided
+    let passwordUpdated = false;
     if (password && password.trim() !== "") {
       const hashed = await bcrypt.hash(password, 12);
       doctor.password = hashed;
+      passwordUpdated = true;
     }
 
     await doctor.save();
+
+    // Send email notification if password was updated
+    if (passwordUpdated) {
+      try {
+        await sendDoctorCredentialsEmail(doctor.email, password, doctor.fullName || doctor.name);
+      } catch (e) {
+        // Non-fatal if email fails
+        console.warn("sendDoctorCredentialsEmail failed during update:", (e as any)?.message || e);
+      }
+    }
 
     res.status(200).json({ success: true, data: { doctor } });
   } catch (error: any) {
