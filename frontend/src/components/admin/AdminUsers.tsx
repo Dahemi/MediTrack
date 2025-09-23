@@ -11,6 +11,16 @@ import {
 } from "@heroicons/react/24/outline";
 import { getUsers, toggleUserStatus, type User } from "../../services/admin.api";
 
+interface DoctorForm {
+  email: string;
+  password: string;
+  fullName: string;
+  specialization: string;
+  yearsOfExperience: number;
+  phone: string;
+  profilePictureUrl?: string;
+}
+
 const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +31,18 @@ const AdminUsers: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
   const [isToggling, setIsToggling] = useState<string | null>(null);
+  const [showAddDoctor, setShowAddDoctor] = useState(false);
+  const [creatingDoctor, setCreatingDoctor] = useState(false);
+  const [editingDoctor, setEditingDoctor] = useState<User | null>(null);
+  const [doctorForm, setDoctorForm] = useState<DoctorForm>({
+    email: "",
+    password: "",
+    fullName: "",
+    specialization: "",
+    yearsOfExperience: 0,
+    phone: "",
+    profilePictureUrl: "",
+  });
 
   const itemsPerPage = 10;
 
@@ -82,6 +104,33 @@ const AdminUsers: React.FC = () => {
     }
   };
 
+  const handleEditDoctor = (doctor: User) => {
+    setEditingDoctor(doctor);
+    setDoctorForm({
+      email: doctor.email || "",
+      password: "", // Don't show existing password
+      fullName: doctor.fullName || doctor.name || "",
+      specialization: doctor.specialization || "",
+      yearsOfExperience: doctor.yearsOfExperience || 0,
+      phone: doctor.contactDetails?.phone || "",
+      profilePictureUrl: (doctor as any).profilePictureUrl || "",
+    });
+    setShowAddDoctor(true);
+  };
+
+  const resetDoctorForm = () => {
+    setDoctorForm({
+      email: "",
+      password: "",
+      fullName: "",
+      specialization: "",
+      yearsOfExperience: 0,
+      phone: "",
+      profilePictureUrl: "",
+    });
+    setEditingDoctor(null);
+  };
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
     setCurrentPage(1); // Reset to first page when searching
@@ -118,9 +167,15 @@ const AdminUsers: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
           <p className="mt-1 text-sm text-gray-600">Manage doctors and patients in the system</p>
         </div>
-        <button className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-          <UserPlusIcon className="h-4 w-4 mr-2" />
-          Add User
+        <button
+          onClick={() => setShowAddDoctor(true)}
+          className="mt-4 sm:mt-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 shadow-sm hover:from-blue-500 hover:to-indigo-500 focus:outline-none focus:ring-4 focus:ring-blue-300 active:scale-[0.99] transition-all duration-200"
+          aria-label="Add Doctor"
+        >
+          <span className="inline-flex items-center justify-center h-5 w-5 rounded-md bg-white/10">
+            <UserPlusIcon className="h-4 w-4" />
+          </span>
+          Add Doctor
         </button>
       </div>
 
@@ -248,7 +303,11 @@ const AdminUsers: React.FC = () => {
                       <button className="text-blue-600 hover:text-blue-900">
                         <EyeIcon className="h-4 w-4" />
                       </button>
-                      <button className="text-yellow-600 hover:text-yellow-900">
+                      <button 
+                        onClick={() => user.userType === "doctor" && handleEditDoctor(user)}
+                        disabled={user.userType !== "doctor"}
+                        className={`${user.userType === "doctor" ? "text-yellow-600 hover:text-yellow-900" : "text-gray-300 cursor-not-allowed"}`}
+                      >
                         <PencilIcon className="h-4 w-4" />
                       </button>
                       <button
@@ -356,6 +415,235 @@ const AdminUsers: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Add Doctor Modal */}
+      {showAddDoctor && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 py-6">
+          <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <UserPlusIcon className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1 text-center">
+                  <h3 className="text-xl font-bold text-white leading-tight">{editingDoctor ? "Edit Doctor" : "Add New Doctor"}</h3>
+                  <p className="text-blue-100 text-sm leading-tight">{editingDoctor ? "Update doctor profile information" : "Create a doctor profile for the system"}</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    setShowAddDoctor(false);
+                    resetDoctorForm();
+                  }}
+                  className="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-xl transition-colors duration-200"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Form Content */}
+            <div className="p-8 space-y-6">
+              {/* Full Name */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700 text-left">
+                  Full Name <span className="text-red-500">*</span>
+                </label>
+                <input 
+                  value={doctorForm.fullName} 
+                  onChange={(e) => setDoctorForm({ ...doctorForm, fullName: e.target.value })} 
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-gray-50 focus:bg-white" 
+                  placeholder="Dr. Jane Smith" 
+                />
+              </div>
+
+              {/* Email and Password */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700 text-left">
+                    Email (Username) <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="email" 
+                    value={doctorForm.email} 
+                    onChange={(e) => setDoctorForm({ ...doctorForm, email: e.target.value })} 
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-gray-50 focus:bg-white" 
+                    placeholder="doctor@example.com" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700 text-left">
+                    {editingDoctor ? "New Password (Empty = Current PW)" : "Temporary Password"} <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    value={doctorForm.password} 
+                    onChange={(e) => setDoctorForm({ ...doctorForm, password: e.target.value })} 
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-gray-50 focus:bg-white" 
+                    placeholder="Generate or type a temp password" 
+                  />
+                </div>
+              </div>
+
+              {/* Specialization and Experience */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700 text-left">
+                    Specialization <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    value={doctorForm.specialization} 
+                    onChange={(e) => setDoctorForm({ ...doctorForm, specialization: e.target.value })} 
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-gray-50 focus:bg-white" 
+                    placeholder="Cardiology" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700 text-left">
+                    Years of Experience <span className="text-red-500">*</span>
+                  </label>
+                  <input 
+                    type="number" 
+                    min={0} 
+                    value={doctorForm.yearsOfExperience} 
+                    onChange={(e) => setDoctorForm({ ...doctorForm, yearsOfExperience: Number(e.target.value) })} 
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-gray-50 focus:bg-white" 
+                    placeholder="10" 
+                  />
+                </div>
+              </div>
+
+              {/* Phone */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700 text-left">
+                  Phone Number <span className="text-red-500">*</span>
+                </label>
+                <input 
+                  value={doctorForm.phone} 
+                  onChange={(e) => setDoctorForm({ ...doctorForm, phone: e.target.value })} 
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-gray-50 focus:bg-white" 
+                  placeholder="+94 xxxxxxxxx" 
+                />
+              </div>
+
+              {/* Profile Picture URL */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-gray-700 text-left">
+                  Profile Picture URL
+                </label>
+                <input 
+                  value={doctorForm.profilePictureUrl} 
+                  onChange={(e) => setDoctorForm({ ...doctorForm, profilePictureUrl: e.target.value })} 
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 bg-gray-50 focus:bg-white" 
+                  placeholder="https://example.com/doctor-photo.jpg" 
+                />
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                  <div className="flex items-center space-x-2">
+                    <svg className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-sm font-medium text-red-700">{error}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Actions */}
+            <div className="bg-gray-50 px-8 py-6 flex items-center justify-end space-x-4">
+              <button 
+                onClick={() => {
+                  setShowAddDoctor(false);
+                  resetDoctorForm();
+                }}
+                className="px-6 py-3 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button 
+                disabled={creatingDoctor} 
+                className="px-8 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-500 hover:to-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2" 
+                onClick={async () => {
+                  try {
+                    setCreatingDoctor(true);
+                    setError("");
+                    
+                    if (editingDoctor) {
+                      // Update existing doctor
+                      const payload = {
+                        name: doctorForm.fullName,
+                        email: doctorForm.email,
+                        password: doctorForm.password || undefined, // Only include if provided
+                        fullName: doctorForm.fullName,
+                        specialization: doctorForm.specialization,
+                        yearsOfExperience: doctorForm.yearsOfExperience,
+                        contactDetails: { email: doctorForm.email, phone: doctorForm.phone },
+                        profilePictureUrl: doctorForm.profilePictureUrl,
+                      };
+                      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/admin/doctors/${editingDoctor._id}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("meditrack_admin_token") || ""}` },
+                        body: JSON.stringify(payload),
+                      });
+                      const data = await res.json();
+                      if (!res.ok || !data.success) throw new Error(data.message || "Failed to update doctor");
+                    } else {
+                      // Create new doctor
+                      const payload = {
+                        name: doctorForm.fullName,
+                        email: doctorForm.email,
+                        password: doctorForm.password,
+                        fullName: doctorForm.fullName,
+                        specialization: doctorForm.specialization,
+                        yearsOfExperience: doctorForm.yearsOfExperience,
+                        contactDetails: { email: doctorForm.email, phone: doctorForm.phone },
+                        profilePictureUrl: doctorForm.profilePictureUrl,
+                        userType: "doctor" as const,
+                      };
+                      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/admin/doctors`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("meditrack_admin_token") || ""}` },
+                        body: JSON.stringify(payload),
+                      });
+                      const data = await res.json();
+                      if (!res.ok || !data.success) throw new Error(data.message || "Failed to create doctor");
+                    }
+                    
+                    // refresh list and close modal
+                    setShowAddDoctor(false);
+                    resetDoctorForm();
+                    setCurrentPage(1);
+                    fetchUsers();
+                  } catch (e: any) {
+                    setError(e.message || `Failed to ${editingDoctor ? "update" : "create"} doctor`);
+                  } finally {
+                    setCreatingDoctor(false);
+                  }
+                }}
+              >
+                {creatingDoctor ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    <span>{editingDoctor ? "Updating..." : "Creating..."}</span>
+                  </>
+                ) : (
+                  <>
+                    <UserPlusIcon className="h-4 w-4" />
+                    <span>{editingDoctor ? "Update Doctor" : "Create Doctor"}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -4,6 +4,7 @@ import Admin from "../models/admin.model.js";
 import User from "../models/user.model.js";
 import { Appointment } from "../models/appointment.model.js";
 import { generateToken } from "../middleware/auth.middleware.js";
+import { sendDoctorCredentialsEmail } from "../config/mailer.js";
 
 // Admin login
 export const adminLogin = async (
@@ -408,5 +409,127 @@ export const getDashboardStats = async (
       success: false,
       message: "Internal server error.",
     });
+  }
+};
+
+// Create doctor by admin with credentials email
+export const createDoctorByAdmin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, password, fullName, specialization, yearsOfExperience, contactDetails, profilePictureUrl } = req.body;
+
+    if (!email || !password || !fullName || !specialization) {
+      res.status(400).json({ success: false, message: "Missing required fields" });
+      return;
+    }
+
+    const existing = await User.findOne({ email: email.toLowerCase() });
+    if (existing) {
+      res.status(400).json({ success: false, message: "A user with this email already exists" });
+      return;
+    }
+
+    const hashed = await bcrypt.hash(password, 12);
+    const newUser = new User({
+      name: fullName,
+      email: email.toLowerCase(),
+      password: hashed,
+      userType: "doctor",
+      fullName,
+      specialization,
+      yearsOfExperience: Number(yearsOfExperience) || 0,
+      contactDetails: {
+        email: contactDetails?.email || email.toLowerCase(),
+        phone: contactDetails?.phone || "",
+      },
+      profilePictureUrl: profilePictureUrl || "",
+      isVerified: true,
+    });
+    await newUser.save();
+
+    // Fire and forget email
+    try {
+      await sendDoctorCredentialsEmail(email, password, fullName);
+    } catch (e) {
+      // Non-fatal if email fails
+      console.warn("sendDoctorCredentialsEmail failed:", (e as any)?.message || e);
+    }
+
+    res.status(201).json({ success: true, data: { doctor: newUser } });
+  } catch (error: any) {
+    console.error("Admin create doctor error:", error);
+    res.status(500).json({ success: false, message: "Internal server error." });
+  }
+};
+
+// Update doctor by admin
+export const updateDoctorByAdmin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { doctorId } = req.params;
+    const { name, email, password, fullName, specialization, yearsOfExperience, contactDetails, profilePictureUrl } = req.body;
+
+    if (!name || !email || !fullName || !specialization) {
+      res.status(400).json({ success: false, message: "Missing required fields" });
+      return;
+    }
+
+    const doctor = await User.findOne({ _id: doctorId, userType: "doctor" });
+    if (!doctor) {
+      res.status(404).json({ success: false, message: "Doctor not found" });
+      return;
+    }
+
+    // Check if email is being changed and if it's already taken
+    if (email !== doctor.email) {
+      const existing = await User.findOne({ email: email.toLowerCase(), _id: { $ne: doctorId } });
+      if (existing) {
+        res.status(400).json({ success: false, message: "A user with this email already exists" });
+        return;
+      }
+    }
+
+    // Update fields
+    doctor.name = name;
+    doctor.email = email.toLowerCase();
+    doctor.fullName = fullName;
+    doctor.specialization = specialization;
+    doctor.yearsOfExperience = Number(yearsOfExperience) || 0;
+    doctor.contactDetails = {
+      email: contactDetails?.email || email.toLowerCase(),
+      phone: contactDetails?.phone || "",
+    };
+    doctor.profilePictureUrl = profilePictureUrl || "";
+
+    // Only update password if provided
+    if (password && password.trim() !== "") {
+      const hashed = await bcrypt.hash(password, 12);
+      doctor.password = hashed;
+    }
+
+    await doctor.save();
+
+    res.status(200).json({ success: true, data: { doctor } });
+  } catch (error: any) {
+    console.error("Admin update doctor error:", error);
+    res.status(500).json({ success: false, message: "Internal server error." });
+  }
+};
+
+// Delete doctor by admin
+export const deleteDoctorByAdmin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { doctorId } = req.params;
+
+    const doctor = await User.findOne({ _id: doctorId, userType: "doctor" });
+    if (!doctor) {
+      res.status(404).json({ success: false, message: "Doctor not found" });
+      return;
+    }
+
+    await User.findByIdAndDelete(doctorId);
+
+    res.status(200).json({ success: true, message: "Doctor deleted successfully" });
+  } catch (error: any) {
+    console.error("Admin delete doctor error:", error);
+    res.status(500).json({ success: false, message: "Internal server error." });
   }
 };

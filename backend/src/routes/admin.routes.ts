@@ -7,6 +7,9 @@ import {
   getAllAppointments,
   cancelAppointmentAdmin,
   getDashboardStats,
+  createDoctorByAdmin,
+  updateDoctorByAdmin,
+  deleteDoctorByAdmin,
 } from "../controllers/admin.controller.js";
 import { requireAdmin } from "../middleware/auth.middleware.js";
 
@@ -48,5 +51,20 @@ router.put("/appointments/:appointmentId/cancel", requireAdmin, cancelAppointmen
 // @desc    Get dashboard statistics
 // @access  Admin only
 router.get("/stats", requireAdmin, getDashboardStats);
+
+// @route   POST /api/admin/doctors
+// @desc    Create a doctor (admin)
+// @access  Admin only
+router.post("/doctors", requireAdmin, createDoctorByAdmin);
+
+// @route   PUT /api/admin/doctors/:doctorId
+// @desc    Update a doctor (admin)
+// @access  Admin only
+router.put("/doctors/:doctorId", requireAdmin, updateDoctorByAdmin);
+
+// @route   DELETE /api/admin/doctors/:doctorId
+// @desc    Delete a doctor (admin)
+// @access  Admin only
+router.delete("/doctors/:doctorId", requireAdmin, deleteDoctorByAdmin);
 
 export default router;
