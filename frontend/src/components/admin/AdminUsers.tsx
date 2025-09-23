@@ -97,6 +97,11 @@ const AdminUsers: React.FC = () => {
     return date.toLocaleDateString();
   };
 
+  const formatName = (u: User) => {
+    const raw = (u.fullName || u.name || "");
+    return raw.replace(/\s+/g, " ").trim();
+  };
+
   if (loading && users.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -108,14 +113,12 @@ const AdminUsers: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex justify-between items-center">
-        <div>
+      <div className="flex flex-col items-center sm:flex-row sm:items-center sm:justify-between">
+        <div className="w-full text-center">
           <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
-          <p className="mt-1 text-sm text-gray-600">
-            Manage doctors and patients in the system
-          </p>
+          <p className="mt-1 text-sm text-gray-600">Manage doctors and patients in the system</p>
         </div>
-        <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+        <button className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
           <UserPlusIcon className="h-4 w-4 mr-2" />
           Add User
         </button>
@@ -169,10 +172,10 @@ const AdminUsers: React.FC = () => {
       {/* Users Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full table-fixed divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/3 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   User
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -195,18 +198,18 @@ const AdminUsers: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {users.map((user) => (
                 <tr key={user._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="w-1/3 px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                      <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
                         <span className="text-sm font-medium text-gray-700">
                           {user.name.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {user.fullName || user.name}
+                      <div className="ml-4 min-w-0 text-left">
+                        <div className="text-sm font-medium text-gray-900 truncate">
+                          {formatName(user)}
                         </div>
-                        <div className="text-sm text-gray-500">{user.email}</div>
+                        <div className="text-sm text-gray-500 truncate">{(user.email || "").trim()}</div>
                       </div>
                     </div>
                   </td>

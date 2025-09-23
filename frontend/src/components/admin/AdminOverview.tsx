@@ -25,12 +25,14 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, tr
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex items-center">
+        {/* Left-aligned icon */}
         <div className={`flex-shrink-0 p-3 rounded-lg ${color}`}>
           <Icon className="h-6 w-6 text-white" />
         </div>
-        <div className="ml-4 flex-1">
+        {/* Centered content in remaining space */}
+        <div className="ml-4 flex-1 flex flex-col items-center text-center">
           <h3 className="text-sm font-medium text-gray-500">{title}</h3>
-          <div className="flex items-baseline">
+          <div className="flex items-baseline justify-center">
             <p className="text-2xl font-semibold text-gray-900">{value.toLocaleString()}</p>
             {trend && (
               <span
