@@ -144,35 +144,41 @@ const AdminAppointments: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Page Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Appointment Management</h2>
-        <p className="mt-1 text-sm text-gray-600">
+      <div className="text-center">
+        <h2 className="text-3xl font-bold text-gray-900">Appointment Management</h2>
+        <p className="mt-2 text-lg text-gray-600">
           Monitor and manage all appointments in the system
         </p>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <div className="text-sm text-red-700">{error}</div>
-          <button
-            onClick={() => setError("")}
-            className="mt-2 text-sm text-red-600 hover:text-red-800"
-          >
-            Dismiss
-          </button>
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-start">
+            <XCircleIcon className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" />
+            <div className="ml-4">
+              <h3 className="text-lg font-semibold text-red-800">Error</h3>
+              <div className="mt-2 text-sm text-red-700">{error}</div>
+              <button
+                onClick={() => setError("")}
+                className="mt-4 bg-red-100 px-4 py-2 rounded-xl text-sm font-semibold text-red-800 hover:bg-red-200 transition-colors duration-200"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Search and Filter */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex flex-col sm:flex-row gap-4">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+        <div className="flex flex-col sm:flex-row gap-6">
           {/* Date Filter */}
           <div className="flex-1">
             <div className="relative">
-              <CalendarDaysIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+              <CalendarDaysIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
               <input
                 type="date"
                 value={searchDate}
@@ -182,21 +188,23 @@ const AdminAppointments: React.FC = () => {
                 }}
                 onFocus={(e) => (e.currentTarget as any).showPicker && (e.currentTarget as any).showPicker()}
                 onClick={(e) => (e.currentTarget as any).showPicker && (e.currentTarget as any).showPicker()}
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="pl-12 pr-4 py-3 w-full border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 focus:bg-white transition-colors duration-200"
               />
             </div>
           </div>
 
           {/* Status Filter */}
-          <div className="flex items-center space-x-2">
-            <FunnelIcon className="h-5 w-5 text-gray-400" />
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-gray-100 rounded-xl">
+              <FunnelIcon className="h-5 w-5 text-gray-600" />
+            </div>
             <select
               value={filterStatus}
               onChange={(e) => {
                 setFilterStatus(e.target.value);
                 setCurrentPage(1);
               }}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 focus:bg-white transition-colors duration-200"
             >
               <option value="all">All Status</option>
               <option value="booked">Booked</option>
@@ -208,44 +216,44 @@ const AdminAppointments: React.FC = () => {
         </div>
 
         {/* Results count */}
-        <div className="mt-4 text-sm text-gray-600">
+        <div className="mt-6 text-sm font-semibold text-gray-600 bg-gray-50 px-4 py-2 rounded-xl">
           Showing {appointments.length} of {totalAppointments} appointments
         </div>
       </div>
 
       {/* Appointments Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 text-left">
-            <thead className="bg-gray-50">
+            <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Patient
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Doctor
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Date & Time
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Queue #
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Created
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {appointments.map((appointment) => (
-                <tr key={appointment._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                <tr key={appointment._id} className="hover:bg-gray-50 transition-colors duration-200">
+                  <td className="px-8 py-6 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900">
                         {appointment.patientName}
@@ -255,29 +263,29 @@ const AdminAppointments: React.FC = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
+                  <td className="px-8 py-6 whitespace-nowrap">
+                    <div className="text-sm font-semibold text-gray-900">
                       {appointment.doctorName}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
+                  <td className="px-8 py-6 whitespace-nowrap">
+                    <div className="text-sm font-semibold text-gray-900">
                       {appointment.date}
                     </div>
                     <div className="text-sm text-gray-500">
                       {appointment.time}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                  <td className="px-8 py-6 whitespace-nowrap">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800">
                       #{appointment.queueNumber}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-8 py-6 whitespace-nowrap">
                     <div className="flex items-center">
                       {getStatusIcon(appointment.status)}
                       <span
-                        className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                        className={`ml-2 inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(
                           appointment.status
                         )}`}
                       >
@@ -285,20 +293,20 @@ const AdminAppointments: React.FC = () => {
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-8 py-6 whitespace-nowrap text-sm text-gray-500">
                     {formatDate(appointment.createdAt)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:text-blue-900">
-                        <EyeIcon className="h-4 w-4" />
+                  <td className="px-8 py-6 whitespace-nowrap text-sm font-medium">
+                    <div className="flex space-x-3">
+                      <button className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-xl transition-colors duration-200">
+                        <EyeIcon className="h-5 w-5" />
                       </button>
                       {(appointment.status === "booked" || appointment.status === "in_session") && (
                         <button
                           onClick={() => setShowCancelModal(appointment._id)}
-                          className="text-red-600 hover:text-red-900"
+                          className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-xl transition-colors duration-200"
                         >
-                          <XMarkIcon className="h-4 w-4" />
+                          <XMarkIcon className="h-5 w-5" />
                         </button>
                       )}
                     </div>

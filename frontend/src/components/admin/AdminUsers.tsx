@@ -160,12 +160,12 @@ const AdminUsers: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Page Header */}
       <div className="flex flex-col items-center sm:flex-row sm:items-center sm:justify-between">
         <div className="w-full text-center">
-          <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
-          <p className="mt-1 text-sm text-gray-600">Manage doctors and patients in the system</p>
+          <h2 className="text-3xl font-bold text-gray-900">User Management</h2>
+          <p className="mt-2 text-lg text-gray-600">Manage doctors and patients in the system</p>
         </div>
         <button
           onClick={() => setShowAddDoctor(true)}
@@ -181,35 +181,43 @@ const AdminUsers: React.FC = () => {
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <div className="text-sm text-red-700">{error}</div>
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-start">
+            <XCircleIcon className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" />
+            <div className="ml-4">
+              <h3 className="text-lg font-semibold text-red-800">Error</h3>
+              <div className="mt-2 text-sm text-red-700">{error}</div>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Search and Filter */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex flex-col sm:flex-row gap-4">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+        <div className="flex flex-col sm:flex-row gap-6">
           {/* Search */}
           <div className="flex-1">
             <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search by name, email..."
                 value={searchTerm}
                 onChange={handleSearchChange}
-                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="pl-12 pr-4 py-3 w-full border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 focus:bg-white transition-colors duration-200"
               />
             </div>
           </div>
 
           {/* Filter */}
-          <div className="flex items-center space-x-2">
-            <FunnelIcon className="h-5 w-5 text-gray-400" />
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-gray-100 rounded-xl">
+              <FunnelIcon className="h-5 w-5 text-gray-600" />
+            </div>
             <select
               value={filterType}
               onChange={handleFilterChange}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 focus:bg-white transition-colors duration-200"
             >
               <option value="all">All Users</option>
               <option value="patient">Patients</option>
@@ -219,41 +227,41 @@ const AdminUsers: React.FC = () => {
         </div>
 
         {/* Results count */}
-        <div className="mt-4 text-sm text-gray-600">
+        <div className="mt-6 text-sm font-semibold text-gray-600 bg-gray-50 px-4 py-2 rounded-xl">
           Showing {users.length} of {totalUsers} users
         </div>
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full table-fixed divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
               <tr>
-                <th className="w-1/3 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-1/3 px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   User
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Type
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Specialization
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Join Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {users.map((user) => (
-                <tr key={user._id} className="hover:bg-gray-50">
-                  <td className="w-1/3 px-6 py-4 whitespace-nowrap">
+                <tr key={user._id} className="hover:bg-gray-50 transition-colors duration-200">
+                  <td className="w-1/3 px-8 py-6 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
                         <span className="text-sm font-medium text-gray-700">
@@ -268,9 +276,9 @@ const AdminUsers: React.FC = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-8 py-6 whitespace-nowrap">
                     <span
-                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
                         user.userType === "doctor"
                           ? "bg-blue-100 text-blue-800"
                           : "bg-green-100 text-green-800"
@@ -279,10 +287,10 @@ const AdminUsers: React.FC = () => {
                       {user.userType}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-8 py-6 whitespace-nowrap">
                     <div className="flex items-center">
                       <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
                           user.isVerified
                             ? "bg-green-100 text-green-800"
                             : "bg-red-100 text-red-800"
@@ -292,39 +300,39 @@ const AdminUsers: React.FC = () => {
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-8 py-6 whitespace-nowrap text-sm text-gray-500">
                     {user.specialization || "-"}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-8 py-6 whitespace-nowrap text-sm text-gray-500">
                     {formatDate(user.createdAt)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button className="text-blue-600 hover:text-blue-900">
-                        <EyeIcon className="h-4 w-4" />
+                  <td className="px-8 py-6 whitespace-nowrap text-sm font-medium">
+                    <div className="flex space-x-3">
+                      <button className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-xl transition-colors duration-200">
+                        <EyeIcon className="h-5 w-5" />
                       </button>
                       <button 
                         onClick={() => user.userType === "doctor" && handleEditDoctor(user)}
                         disabled={user.userType !== "doctor"}
-                        className={`${user.userType === "doctor" ? "text-yellow-600 hover:text-yellow-900" : "text-gray-300 cursor-not-allowed"}`}
+                        className={`p-2 rounded-xl transition-colors duration-200 ${user.userType === "doctor" ? "text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50" : "text-gray-300 cursor-not-allowed"}`}
                       >
-                        <PencilIcon className="h-4 w-4" />
+                        <PencilIcon className="h-5 w-5" />
                       </button>
                       <button
                         onClick={() => handleToggleUserStatus(user._id, user.isVerified)}
                         disabled={isToggling === user._id}
-                        className={`${
+                        className={`p-2 rounded-xl transition-colors duration-200 ${
                           user.isVerified
-                            ? "text-red-600 hover:text-red-900"
-                            : "text-green-600 hover:text-green-900"
+                            ? "text-red-600 hover:text-red-900 hover:bg-red-50"
+                            : "text-green-600 hover:text-green-900 hover:bg-green-50"
                         } ${isToggling === user._id ? "opacity-50" : ""}`}
                       >
                         {isToggling === user._id ? (
-                          <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
+                          <div className="animate-spin h-5 w-5 border-2 border-current border-t-transparent rounded-full"></div>
                         ) : user.isVerified ? (
-                          <TrashIcon className="h-4 w-4" />
+                          <TrashIcon className="h-5 w-5" />
                         ) : (
-                          <UserPlusIcon className="h-4 w-4" />
+                          <UserPlusIcon className="h-5 w-5" />
                         )}
                       </button>
                     </div>
