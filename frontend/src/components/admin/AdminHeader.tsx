@@ -1,12 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Bars3Icon,
-  BellIcon,
-  UserCircleIcon,
-  ArrowRightOnRectangleIcon,
-  Cog6ToothIcon,
-} from "@heroicons/react/24/outline";
 import { useAdminAuth } from "../../context/AdminAuthContext";
 
 interface AdminHeaderProps {
@@ -46,45 +39,52 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
     return date.toLocaleDateString() + " " + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    if (hour < 21) return "Good evening";
+    return "Good night";
+  };
+
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
+    <header className="bg-white border-b border-gray-200">
       <div className="px-6 py-4">
         <div className="flex items-center justify-between">
-          {/* Left side - Menu button and title */}
           <div className="flex items-center">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 transition-colors duration-200"
-            >
-              <Bars3Icon className="h-6 w-6" />
-            </button>
-            <div className="ml-4">
-              <h1 className="text-xl font-semibold text-gray-900">
-                Hospital Administration
+            <div className="flex flex-col items-start">
+              <h1 className="text-2xl font-semibold text-gray-800">
+                Welcome back, {admin?.fullName || admin?.username || "Admin"}
               </h1>
               <p className="text-sm text-gray-500">
-                Manage users, appointments, and system operations
+                {new Date().toLocaleString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric', 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                })}
               </p>
             </div>
           </div>
 
-          {/* Right side - Notifications and user menu */}
           <div className="flex items-center space-x-4">
-            {/* Notifications */}
-            <button className="text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 relative">
-              <BellIcon className="h-6 w-6" />
-              {/* Notification badge */}
-              <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
-            </button>
+            {/* Online indicator */}
+            <div className="hidden sm:flex items-center">
+              <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+              <span className="ml-1 text-sm text-gray-500">Online</span>
+            </div>
 
-            {/* User menu */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 <div className="flex items-center space-x-3">
-                  <UserCircleIcon className="h-8 w-8 text-gray-400" />
+                  <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm">
+                    {(admin?.fullName || admin?.username || "A").charAt(0)}
+                  </div>
                   <div className="text-left">
                     <p className="text-sm font-medium text-gray-900">
                       {admin?.fullName || admin?.username}
@@ -94,7 +94,6 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
                 </div>
               </button>
 
-              {/* Dropdown menu */}
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
                   {/* Admin info */}
@@ -116,7 +115,10 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
                     }}
                     className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
-                    <Cog6ToothIcon className="mr-3 h-5 w-5" />
+                    <svg className="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.983 13.86a1.86 1.86 0 110-3.72 1.86 1.86 0 010 3.72z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12a8 8 0 10-8 8 8 8 0 008-8z" />
+                    </svg>
                     Settings
                   </button>
 
@@ -124,7 +126,9 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
                     onClick={handleLogout}
                     className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
-                    <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5" />
+                    <svg className="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7" />
+                    </svg>
                     Sign out
                   </button>
                 </div>
