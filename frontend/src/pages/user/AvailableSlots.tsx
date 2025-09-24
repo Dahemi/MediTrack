@@ -95,17 +95,17 @@ const AvailableSlots: React.FC = () => {
     fetchBookedAppointments();
   }, [doctor._id, doctor.availability, refreshTrigger]);
 
-  // Auto-refresh every 1 second (only when page is visible)
+  // Auto-refresh every 1 second (only when page is visible and no date is selected)
   useEffect(() => {
     const interval = setInterval(() => {
-      // Only refresh if the page is visible
-      if (!document.hidden) {
+      // Only refresh if the page is visible and no date is selected
+      if (!document.hidden && !selectedDate) {
         setRefreshTrigger(prev => prev + 1);
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedDate]);
 
   // Refresh data when component becomes visible (e.g., returning from booking)
   useEffect(() => {
@@ -150,7 +150,7 @@ const AvailableSlots: React.FC = () => {
       <Navbar />
       <main className="flex-1 max-w-3xl mx-auto px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Available Slots for {doctor.fullName}</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Available Slots for {doctor.fullName}</h1>
           <div className="text-gray-600">{doctor.specialization} • {doctor.yearsOfExperience} years experience</div>
         </div>
         {/* Calendar */}
@@ -222,7 +222,7 @@ const AvailableSlots: React.FC = () => {
                 >
                   <div className="flex flex-col items-center justify-center">
                     <span className={`text-sm font-semibold ${!isInCurrentMonth ? "text-gray-300" : ""}`}>
-                      {day.getDate()}
+                  {day.getDate()}
                     </span>
                     {isToday && <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-0.5"></div>}
                   </div>
@@ -251,10 +251,10 @@ const AvailableSlots: React.FC = () => {
                   </button>
                 )}
               </div>
-              <div className="flex items-center space-x-1 text-xs text-gray-500">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span>Auto-refresh</span>
-              </div>
+               <div className="flex items-center space-x-1 text-xs text-gray-500">
+                 <div className={`w-2 h-2 rounded-full ${selectedDate ? 'bg-gray-400' : 'bg-green-500 animate-pulse'}`}></div>
+                 <span>{selectedDate ? 'Auto-refresh paused' : 'Auto-refresh'}</span>
+               </div>
             </div>
           </div>
           {selectedDate && (
@@ -263,23 +263,23 @@ const AvailableSlots: React.FC = () => {
               {loading ? (
                 <div className="text-gray-500">Loading available slots...</div>
               ) : (
-                <div className="flex flex-wrap gap-2">
-                  {slots.length === 0 ? (
-                    <span className="text-gray-500">No slots available</span>
-                  ) : (
-                    slots.map(slot => (
-                      <button
-                        key={slot}
-                        className={`px-4 py-2 rounded-lg border font-medium
-                          ${selectedSlot === slot ? "bg-blue-600 text-white border-blue-700" : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"}
-                        `}
-                        onClick={() => setSelectedSlot(slot)}
-                      >
-                        {slot}
-                      </button>
-                    ))
-                  )}
-                </div>
+              <div className="flex flex-wrap gap-2">
+                {slots.length === 0 ? (
+                  <span className="text-gray-500">No slots available</span>
+                ) : (
+                  slots.map(slot => (
+                    <button
+                      key={slot}
+                      className={`px-4 py-2 rounded-lg border font-medium
+                        ${selectedSlot === slot ? "bg-blue-600 text-white border-blue-700" : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"}
+                      `}
+                      onClick={() => setSelectedSlot(slot)}
+                    >
+                      {slot}
+                    </button>
+                  ))
+                )}
+              </div>
               )}
             </div>
           )}
