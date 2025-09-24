@@ -95,6 +95,18 @@ const AvailableSlots: React.FC = () => {
     fetchBookedAppointments();
   }, [doctor._id, doctor.availability, refreshTrigger]);
 
+  // Auto-refresh every 1 second (only when page is visible)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Only refresh if the page is visible
+      if (!document.hidden) {
+        setRefreshTrigger(prev => prev + 1);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Refresh data when component becomes visible (e.g., returning from booking)
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -137,18 +149,9 @@ const AvailableSlots: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-teal-50">
       <Navbar />
       <main className="flex-1 max-w-3xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Available Slots for {doctor.fullName}</h1>
-            <div className="text-gray-600">{doctor.specialization} • {doctor.yearsOfExperience} years experience</div>
-          </div>
-          <button
-            onClick={() => setRefreshTrigger(prev => prev + 1)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            disabled={loading}
-          >
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </button>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Available Slots for {doctor.fullName}</h1>
+          <div className="text-gray-600">{doctor.specialization} • {doctor.yearsOfExperience} years experience</div>
         </div>
         {/* Calendar */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
@@ -230,22 +233,28 @@ const AvailableSlots: React.FC = () => {
           
           {/* Date Picker for Any Date */}
           <div className="border-t border-gray-200 pt-4">
-            <div className="flex items-center space-x-3">
-              <label className="text-sm font-medium text-gray-700">Or select any date:</label>
-              <input
-                type="date"
-                value={selectedDate || ""}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              {selectedDate && (
-                <button
-                  onClick={() => setSelectedDate(null)}
-                  className="px-2 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                >
-                  Clear
-                </button>
-              )}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <label className="text-sm font-medium text-gray-700">Or select any date:</label>
+                <input
+                  type="date"
+                  value={selectedDate || ""}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                {selectedDate && (
+                  <button
+                    onClick={() => setSelectedDate(null)}
+                    className="px-2 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center space-x-1 text-xs text-gray-500">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span>Auto-refresh</span>
+              </div>
             </div>
           </div>
           {selectedDate && (
