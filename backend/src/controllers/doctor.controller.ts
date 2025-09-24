@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import User from "../models/user.model.js";
 import { Appointment } from "../models/appointment.model.js";
+import bcrypt from "bcryptjs";
 
 // Helper function to normalize dates to YYYY-MM-DD format
 const normalizeDate = (dateString: string): string => {
@@ -146,6 +147,64 @@ export const updateDoctorProfile = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error("Error updating doctor profile:", error);
     res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+// Change doctor password
+export const changeDoctorPassword = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Current password and new password are required" 
+      });
+    }
+    
+    if (newPassword.length < 6) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "New password must be at least 6 characters long" 
+      });
+    }
+    
+    // Find the doctor and include the password field
+    const doctor = await User.findOne({ _id: id, userType: "doctor" }).select("+password");
+    
+    if (!doctor) {
+      return res.status(404).json({ success: false, message: "Doctor not found" });
+    }
+    
+    // Check if doctor has a password field (if using local auth)
+    if (doctor.password) {
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, doctor.password);
+      
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Current password is incorrect" 
+        });
+      }
+      
+      // Hash new password
+      const hashedNewPassword = await bcrypt.hash(newPassword, 12);
+      
+      // Update password
+      await User.findByIdAndUpdate(id, { password: hashedNewPassword });
+      
+      res.json({ success: true, message: "Password changed successfully" });
+    } else {
+      // If using OAuth (Google, etc.), password change might not be applicable
+      return res.status(400).json({ 
+        success: false, 
+        message: "Password change not available for this account type" 
+      });
+    }
+  } catch (error: any) {
+    console.error("Error changing password:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

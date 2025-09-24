@@ -5,6 +5,7 @@ import {
   getDoctorById,
   updateDoctor,
   updateDoctorProfile,
+  changeDoctorPassword,
   getDoctorPatients,
   deleteDoctor,
 } from "../controllers/doctor.controller.js";
@@ -18,6 +19,7 @@ router.get("/", getDoctors); // Keep public for frontend doctor directory
 router.get("/:id", getDoctorById); // Keep public for frontend doctor details
 router.put("/:id", requireAdmin, updateDoctor);
 router.patch("/:id/profile", updateDoctorProfile);
+router.patch("/:id/password", changeDoctorPassword);
 router.get("/:id/patients", getDoctorPatients); // Doctor can update their own profile
 router.delete("/:id", requireAdmin, deleteDoctor);
 
