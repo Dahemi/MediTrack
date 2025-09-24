@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Appointment } from "../models/appointment.model.js";
 import User, { IUser } from "../models/user.model.js";
 import { Document } from "mongoose";
+import mongoose from "mongoose";
 
 // Helper to get start time for doctor on a given date
 function getDoctorStartTime(doctor: Document<unknown, {}, IUser, {}, {}> & IUser & Required<{ _id: unknown; }> & { __v: number; }, date: any) {
@@ -366,7 +367,6 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
 export const getAppointmentsByPatient = async (req: Request, res: Response) => {
   try {
     const { patientId } = req.params;
-    console.log('Fetching appointments for patient:', patientId);
 
     if (!patientId) {
       return res.status(400).json({
@@ -380,7 +380,6 @@ export const getAppointmentsByPatient = async (req: Request, res: Response) => {
       patientId: patientId // Make sure patientId matches exactly
     }).sort({ date: -1, time: -1 });
 
-    console.log('Raw appointments found:', appointments); // Debug log
 
     if (!appointments) {
       return res.status(200).json({
@@ -406,13 +405,40 @@ export const getAppointmentsByPatient = async (req: Request, res: Response) => {
 export const getDoctorAppointmentsByDate = async (req: Request, res: Response) => {
   try {
     const { doctorId, date } = req.params;
-    const appointments = await Appointment.find({ doctorId, date })
+    
+    // Convert string ID to ObjectId for proper comparison
+    const objectId = new mongoose.Types.ObjectId(doctorId);
+    
+    const appointments = await Appointment.find({ 
+      doctorId: objectId, 
+      date 
+    })
       .sort({ queueNumber: 1 })
-      .select("_id patientName time queueNumber status") // Only select needed fields
-      // .populate({ ... }) // Only if you need doctor details
+      .select("_id patientName patientAddress patientContact time queueNumber status notes date");
 
     res.json({ success: true, appointments });
   } catch (error) {
+    console.error("Error fetching appointments:", error);
+    res.status(500).json({ success: false, message: "Error fetching appointments", error });
+  }
+};
+
+export const getDoctorAppointments = async (req: Request, res: Response) => {
+  try {
+    const { doctorId } = req.params;
+    
+    // Convert string ID to ObjectId for proper comparison
+    const objectId = new mongoose.Types.ObjectId(doctorId);
+    
+    const appointments = await Appointment.find({ 
+      doctorId: objectId
+    })
+      .sort({ date: -1, time: -1 })
+      .select("_id patientName patientAddress patientContact time queueNumber status notes date");
+
+    res.json({ success: true, appointments });
+  } catch (error) {
+    console.error("Error fetching appointments:", error);
     res.status(500).json({ success: false, message: "Error fetching appointments", error });
   }
 };

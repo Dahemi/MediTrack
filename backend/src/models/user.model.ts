@@ -93,7 +93,7 @@ const userSchema = new Schema<IUser>(
     availability: [
       {
         day: String,
-        date: String,
+        date: String, // Store as YYYY-MM-DD format to avoid timezone issues
         startTime: String,
         endTime: String,
         slots: Number,
