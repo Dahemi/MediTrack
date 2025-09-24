@@ -6,27 +6,40 @@ import Navbar from "../../components/user/Navbar";
 import Footer from "../../components/Footer";
 import { useNavigate } from "react-router-dom";
 
+interface BookedAppointment {
+  time: string;
+  status: 'booked' | 'in_session' | 'completed' | 'cancelled';
+}
+
 function getSlotsForDay(
   availability: { date: string; startTime: string; endTime: string; slots: number }[],
   dateStr: string,
-  bookedSlots: string[] = []
+  bookedAppointments: BookedAppointment[] = []
 ) {
   const avail = availability.find(a => {
-    // Use UTC parsing to avoid timezone issues
     const date = new Date(a.date);
     const availDateStr = date.toISOString().split('T')[0];
     return availDateStr === dateStr;
   });
+
   if (!avail) return [];
+
   const slots = [];
   let start = parseISO(`${dateStr}T${avail.startTime}`);
   const end = parseISO(`${dateStr}T${avail.endTime}`);
+
+  // Get array of times that are actually booked (not cancelled)
+  const bookedTimes = bookedAppointments
+    .filter(appt => appt.status !== 'cancelled')
+    .map(appt => appt.time);
+
   for (let i = 0; i < avail.slots; i++) {
     const slotTime = addMinutes(start, i * 30);
     if (slotTime >= end) break;
     const slotTimeStr = format(slotTime, "HH:mm");
-    // Only include slots that are not booked
-    if (!bookedSlots.includes(slotTimeStr)) {
+    
+    // Include slot if it's not booked or in session
+    if (!bookedTimes.includes(slotTimeStr)) {
       slots.push(slotTimeStr);
     }
   }
@@ -39,7 +52,7 @@ const AvailableSlots: React.FC = () => {
   const doctor: DoctorData = location.state?.doctor;
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const [bookedAppointments, setBookedAppointments] = useState<{[key: string]: string[]}>({});
+  const [bookedAppointments, setBookedAppointments] = useState<{[key: string]: BookedAppointment[]}>({});
   const [loading, setLoading] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -66,8 +79,7 @@ const AvailableSlots: React.FC = () => {
     
     setLoading(true);
     try {
-      // Fetch appointments for all available dates
-      const bookedByDate: {[key: string]: string[]} = {};
+      const bookedByDate: {[key: string]: BookedAppointment[]} = {};
       
       for (const avail of doctor.availability) {
         const dateStr = new Date(avail.date).toISOString().split('T')[0];
@@ -76,7 +88,10 @@ const AvailableSlots: React.FC = () => {
           const data = await response.json();
           
           if (data.success && data.appointments) {
-            bookedByDate[dateStr] = data.appointments.map((appointment: any) => appointment.time);
+            bookedByDate[dateStr] = data.appointments.map((appointment: any) => ({
+              time: appointment.time,
+              status: appointment.status
+            }));
           }
         } catch (error) {
           console.error(`Error fetching appointments for ${dateStr}:`, error);
@@ -143,7 +158,11 @@ const AvailableSlots: React.FC = () => {
   });
 
   // Get slots for selected day
-  const slots = selectedDate ? getSlotsForDay(doctor.availability, selectedDate, bookedAppointments[selectedDate] || []) : [];
+  const slots = selectedDate ? getSlotsForDay(
+    doctor.availability, 
+    selectedDate, 
+    bookedAppointments[selectedDate] || []
+  ) : [];
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-teal-50">
@@ -263,27 +282,28 @@ const AvailableSlots: React.FC = () => {
               {loading ? (
                 <div className="text-gray-500">Loading available slots...</div>
               ) : (
-              <div className="flex flex-wrap gap-2">
-                {slots.length === 0 ? (
-                  <span className="text-gray-500">No slots available</span>
-                ) : (
-                  slots.map(slot => (
-                    <button
-                      key={slot}
-                      className={`px-4 py-2 rounded-lg border font-medium
-                        ${selectedSlot === slot ? "bg-blue-600 text-white border-blue-700" : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"}
-                      `}
-                      onClick={() => setSelectedSlot(slot)}
-                    >
-                      {slot}
-                    </button>
-                  ))
-                )}
-              </div>
+                <div className="flex flex-wrap gap-2">
+                  {slots.length === 0 ? (
+                    <span className="text-gray-500">No slots available</span>
+                  ) : (
+                    slots.map(slot => (
+                      <button
+                        key={slot}
+                        className={`px-4 py-2 rounded-lg border font-medium
+                          ${selectedSlot === slot ? "bg-blue-600 text-white border-blue-700" : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"}
+                        `}
+                        onClick={() => setSelectedSlot(slot)}
+                      >
+                        {slot}
+                      </button>
+                    ))
+                  )}
+                </div>
               )}
             </div>
           )}
         </div>
+
         <button
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 mt-4"
           disabled={!selectedDate || !selectedSlot}
