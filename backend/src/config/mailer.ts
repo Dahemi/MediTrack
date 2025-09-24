@@ -129,4 +129,52 @@ export const sendDoctorCredentialsEmail = async (
   }
 };
 
+export const sendAppointmentNotification = async (
+  email: string,
+  patientName: string,
+  doctorName: string,
+  patientQueue: number,
+  currentQueue: number,
+  waitTime: number
+): Promise<void> => {
+  const mailOptions = {
+    from: {
+      name: "MediTrack Appointments",
+      address: process.env.EMAIL_USER!,
+    },
+    to: email,
+    subject: "Your Appointment is Coming Up Soon",
+    html: `
+      <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #2563eb; margin: 0;">MediTrack</h1>
+          <p style="color: #6b7280; margin: 5px 0;">Appointment Update</p>
+        </div>
+        
+        <div style="background: #f8fafc; padding: 30px; border-radius: 10px; border: 1px solid #e2e8f0;">
+          <h2 style="color: #1f2937; margin-top: 0;">Hello ${patientName}!</h2>
+          <p style="color: #4b5563; line-height: 1.6;">
+            Your appointment with ${doctorName} is coming up soon. Here are your queue details:
+          </p>
+          <div style="background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:16px; margin:16px 0;">
+            <p style="margin:0; color:#111827;"><strong>Current Queue Number:</strong> ${currentQueue}</p>
+            <p style="margin:8px 0 0; color:#111827;"><strong>Your Queue Number:</strong> ${patientQueue}</p>
+            <p style="margin:8px 0 0; color:#111827;"><strong>Estimated Wait Time:</strong> ${waitTime} seconds</p>
+          </div>
+          <p style="color:#6b7280; font-size:14px;">
+            Please be ready for your appointment. Make sure to arrive before your estimated time.
+          </p>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Appointment notification sent to ${email}`);
+  } catch (error) {
+    console.error("Error sending appointment notification:", error);
+  }
+};
+
 export default transporter;

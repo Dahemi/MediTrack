@@ -3,6 +3,7 @@ import { Appointment } from "../models/appointment.model.js";
 import User, { IUser } from "../models/user.model.js";
 import { Document } from "mongoose";
 import mongoose from "mongoose";
+import { checkAndNotifyPatients } from '../services/notification.service';
 
 // Helper to get start time for doctor on a given date
 function getDoctorStartTime(doctor: Document<unknown, {}, IUser, {}, {}> & IUser & Required<{ _id: unknown; }> & { __v: number; }, date: any) {
@@ -183,21 +184,38 @@ export const updateAppointment = async (req: Request, res: Response) => {
 // Update status only
 export const updateAppointmentStatus = async (req: Request, res: Response) => {
   try {
+    const { id } = req.params;
     const { status } = req.body;
-    if (!["booked", "in_session", "completed", "cancelled"].includes(status)) {
-      return res.status(400).json({ message: "Invalid status" });
-    }
+
     const appointment = await Appointment.findByIdAndUpdate(
-      req.params.id,
+      id,
       { status },
       { new: true }
-    ).select("_id patientName time queueNumber status");
+    );
+
     if (!appointment) {
-      return res.status(404).json({ message: "Appointment not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found"
+      });
     }
-    return res.status(200).json(appointment);
-  } catch (error) {
-    return res.status(500).json({ message: "Error updating status", error });
+
+    // If status changed to "in_session", notify upcoming patients
+    if (status === 'in_session') {
+      await checkAndNotifyPatients(appointment.doctorId, appointment._id);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Appointment status updated successfully",
+      data: appointment
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Error updating appointment status",
+      error: error.message
+    });
   }
 };
 
