@@ -96,11 +96,12 @@ const Login: React.FC = () => {
         });
 
         // Set user in context and redirect to home
-        if (response.data?.patient) {
-          setUser(response.data.patient);
-          setTimeout(() => {
-            navigate("/");
-          }, 1000);
+        if (response.data?.patient && response.data?.token) {
+          setUser({
+            ...response.data.patient,
+            token: response.data.token, // Include token in user data
+          });
+          navigate("/");
         }
       }
     } catch (error: any) {

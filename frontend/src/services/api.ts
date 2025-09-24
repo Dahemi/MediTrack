@@ -10,6 +10,35 @@ const api: AxiosInstance = axios.create({
   },
 });
 
+api.interceptors.request.use(
+  (config) => {
+    const storedUser = localStorage.getItem("meditrack_user");
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      if (user?.token) {
+        config.headers.Authorization = `Bearer ${user.token}`;
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor to handle token expiration
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid
+      localStorage.removeItem("meditrack_user");
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
+
 // API Types
 export interface FirebaseLoginData {
   uid: string;
