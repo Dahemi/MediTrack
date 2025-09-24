@@ -4,6 +4,8 @@ import {
   getDoctors,
   getDoctorById,
   updateDoctor,
+  updateDoctorProfile,
+  getDoctorPatients,
   deleteDoctor,
 } from "../controllers/doctor.controller.js";
 import { requireAdmin } from "../middleware/auth.middleware.js";
@@ -15,6 +17,8 @@ router.post("/", requireAdmin, createDoctor);
 router.get("/", getDoctors); // Keep public for frontend doctor directory
 router.get("/:id", getDoctorById); // Keep public for frontend doctor details
 router.put("/:id", requireAdmin, updateDoctor);
+router.patch("/:id/profile", updateDoctorProfile);
+router.get("/:id/patients", getDoctorPatients); // Doctor can update their own profile
 router.delete("/:id", requireAdmin, deleteDoctor);
 
 export default router;

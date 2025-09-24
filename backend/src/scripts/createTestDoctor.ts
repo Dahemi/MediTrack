@@ -14,11 +14,11 @@ async function createTestDoctor() {
 
     const hashedPassword = await bcrypt.hash("password123", 12);
 
-    // Get current date and create availability for next 7 days
+    // Get current date and create availability for next 14 days (including today)
     const today = new Date();
     const availability = [];
 
-    for (let i = 1; i <= 7; i++) {
+    for (let i = 0; i <= 14; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
 
