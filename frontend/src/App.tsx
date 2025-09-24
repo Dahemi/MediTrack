@@ -13,7 +13,13 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import "./App.css";
 import DoctorManagement from "./pages/admin/DoctorManagement";
 import DoctorsDirectory from "./pages/user/DoctorsDirectory";
+import DoctorLayout from "./components/doctor/DoctorLayout";
 import DoctorDashboard from "./pages/doctor/DoctorDashboard";
+import DoctorAppointments from "./pages/doctor/DoctorAppointments";
+import DoctorPatients from "./pages/doctor/DoctorPatients";
+import DoctorAvailability from "./pages/doctor/DoctorAvailability";
+import DoctorProfile from "./pages/doctor/DoctorProfile";
+import DoctorReports from "./pages/doctor/DoctorReports";
 import AvailableSlots from "./pages/user/AvailableSlots";
 import MyAppointments from "./pages/user/MyAppointments";
 
@@ -40,7 +46,16 @@ function App() {
             <Route path="/appointment/confirmation" element={<AppointmentConfirmation />}/>
             <Route path="/doctorsdir" element={<DoctorsDirectory />} />
             <Route path="/doctors/:id/slots" element={<AvailableSlots />} />
-            <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
+            
+            {/* Doctor Routes */}
+            <Route path="/doctor/*" element={<DoctorLayout />}>
+              <Route path="dashboard" element={<DoctorDashboard />} />
+              <Route path="appointments" element={<DoctorAppointments />} />
+              <Route path="patients" element={<DoctorPatients />} />
+              <Route path="availability" element={<DoctorAvailability />} />
+              <Route path="profile" element={<DoctorProfile />} />
+              <Route path="reports" element={<DoctorReports />} />
+            </Route>
 
             {/* Legacy admin route - keep for backwards compatibility */}
             <Route path="/doctors" element={<DoctorManagement />} />
