@@ -29,6 +29,8 @@ export interface IAppointment extends Document {
   rescheduledFrom?: IRescheduleHistory;
   rescheduledReason?: string;
   rescheduledAt?: Date;
+
+  notificationSent: boolean; // Add this field
 }
 
 const appointmentSchema = new Schema<IAppointment>(
@@ -63,7 +65,9 @@ const appointmentSchema = new Schema<IAppointment>(
       time: String
     },
     rescheduledReason: { type: String },
-    rescheduledAt: { type: Date }
+    rescheduledAt: { type: Date },
+
+    notificationSent: { type: Boolean, default: false }
   },
   {
     timestamps: true,

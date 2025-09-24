@@ -23,7 +23,8 @@ interface Appointment {
 }
 
 const MyAppointments: React.FC = () => {
-  const { user } = useAuth();
+  // Add loading state from auth context
+  const { user, isLoading } = useAuth(); // Add isLoading from useAuth
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,43 +35,48 @@ const MyAppointments: React.FC = () => {
     appointmentId: null
   });
 
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      if (!user?.id) {
-        setError('User ID not found');
-        setLoading(false);
-        return;
+  // Move fetchAppointments outside useEffect so it can be reused
+  const fetchAppointments = async () => {
+    if (!user?.id) {
+      setError('User ID not found');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/appointment/patient/${user.id}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch appointments');
       }
 
-      try {
-        console.log('Fetching appointments with user ID:', user.id); // Debug log
-        
-        const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/appointment/patient/${user.id}`);
-        const data = await response.json();
-        
-        console.log('API Response:', data); // Debug log
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Failed to fetch appointments');
-        }
-
-        if (!data.success) {
-          setError(data.message || 'Failed to fetch appointments');
-          setAppointments([]);
-        } else {
-          setAppointments(data.data || []);
-        }
-      } catch (error: any) {
-        console.error('Error details:', error);
-        setError(error.message || 'Failed to fetch appointments. Please try again later.');
+      if (!data.success) {
+        setError(data.message || 'Failed to fetch appointments');
         setAppointments([]);
-      } finally {
-        setLoading(false);
+      } else {
+        setAppointments(data.data || []);
       }
-    };
+    } catch (error: any) {
+      console.error('Error details:', error);
+      setError(error.message || 'Failed to fetch appointments. Please try again later.');
+      setAppointments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchAppointments();
-  }, [user?.id]);
+  useEffect(() => {
+    // Only fetch if auth is done loading and we have a user
+    if (!isLoading && user?.id) {
+      fetchAppointments();
+    } else if (!isLoading && !user?.id) {
+      // Only show error if auth is done loading and we still don't have a user
+      setError('User ID not found');
+      setLoading(false);
+    }
+  }, [user?.id, isLoading]); // Add isLoading to dependencies
 
   const getStatusBadgeColor = (status: Appointment['status']) => {
     switch (status) {
@@ -128,9 +134,9 @@ const MyAppointments: React.FC = () => {
         throw new Error('Failed to cancel appointment');
       }
 
-      // Close modal and refresh appointments
+      // Close modal and fetch appointments instead of reloading
       setModal({ isOpen: false, type: null, appointmentId: null });
-      window.location.reload();
+      fetchAppointments(); // Re-fetch appointments instead of page reload
     } catch (error) {
       console.error('Error cancelling appointment:', error);
     }

@@ -14,6 +14,7 @@ interface User {
   userType?: string;
   photoURL?: string;
   specialization?: string;
+  token?: string;
 }
 
 interface AuthContextType {
@@ -21,6 +22,8 @@ interface AuthContextType {
   setUser: (user: User | null) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  getToken: () => string | null;
+  isLoading: boolean; 
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,6 +42,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true); 
 
   useEffect(() => {
     // Check for stored user data on app load
@@ -50,6 +54,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.removeItem("meditrack_user");
       }
     }
+    setIsLoading(false);
   }, []);
 
   const handleSetUser = (userData: User | null) => {
@@ -66,11 +71,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem("meditrack_user");
   };
 
+  const getToken = (): string | null => {
+    return user?.token || null;
+  };
+
   const value: AuthContextType = {
     user,
     setUser: handleSetUser,
     logout,
     isAuthenticated: !!user,
+    getToken,
+    isLoading, 
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -3,6 +3,7 @@ import { Appointment } from "../models/appointment.model.js";
 import User, { IUser } from "../models/user.model.js";
 import { Document } from "mongoose";
 import mongoose from "mongoose";
+import { checkAndNotifyPatients } from '../services/notification.service';
 
 // Helper to get start time for doctor on a given date
 function getDoctorStartTime(doctor: Document<unknown, {}, IUser, {}, {}> & IUser & Required<{ _id: unknown; }> & { __v: number; }, date: any) {
@@ -38,13 +39,19 @@ export const createAppointment = async (req: Request, res: Response) => {
       patientContact,
       doctorId,
       doctorName,
-      date, // "YYYY-MM-DD"
-      time, // "HH:mm"
+      date,
+      time,
       notes,
     } = req.body;
 
-    // Check if doctor already has an appointment at this date & time
-    const existingDoctor = await Appointment.findOne({ doctorId, date, time });
+    // Check if doctor already has an active appointment at this date & time
+    const existingDoctor = await Appointment.findOne({ 
+      doctorId, 
+      date, 
+      time,
+      status: { $nin: ['cancelled'] } // Exclude cancelled appointments
+    });
+
     if (existingDoctor) {
       return res.status(400).json({
         success: false,
@@ -52,8 +59,14 @@ export const createAppointment = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if patient already has appointment at same time
-    const existingPatient = await Appointment.findOne({ patientId, date, time });
+    // Check if patient already has active appointment at same time
+    const existingPatient = await Appointment.findOne({ 
+      patientId, 
+      date, 
+      time,
+      status: { $nin: ['cancelled'] } // Exclude cancelled appointments
+    });
+
     if (existingPatient) {
       return res.status(400).json({
         success: false,
@@ -183,21 +196,38 @@ export const updateAppointment = async (req: Request, res: Response) => {
 // Update status only
 export const updateAppointmentStatus = async (req: Request, res: Response) => {
   try {
+    const { id } = req.params;
     const { status } = req.body;
-    if (!["booked", "in_session", "completed", "cancelled"].includes(status)) {
-      return res.status(400).json({ message: "Invalid status" });
-    }
+
     const appointment = await Appointment.findByIdAndUpdate(
-      req.params.id,
+      id,
       { status },
       { new: true }
-    ).select("_id patientName time queueNumber status");
+    );
+
     if (!appointment) {
-      return res.status(404).json({ message: "Appointment not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found"
+      });
     }
-    return res.status(200).json(appointment);
-  } catch (error) {
-    return res.status(500).json({ message: "Error updating status", error });
+
+    // If status changed to "in_session", notify upcoming patients
+    if (status === 'in_session') {
+      await checkAndNotifyPatients(appointment.doctorId, appointment._id);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Appointment status updated successfully",
+      data: appointment
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Error updating appointment status",
+      error: error.message
+    });
   }
 };
 
@@ -229,7 +259,7 @@ export const cancelAppointment = async (req: Request, res: Response) => {
     // Validate required fields
     if (!reason) {
       return res.status(400).json({
-        success: false,
+        success: false, 
         message: "Cancellation reason is required"
       });
     }
@@ -237,13 +267,13 @@ export const cancelAppointment = async (req: Request, res: Response) => {
     // Find appointment and validate it can be cancelled
     const appointment = await Appointment.findById(id);
     if (!appointment) {
-      return res.status(404).json({
+      return res.status(400).json({
         success: false,
         message: "Appointment not found"
       });
     }
 
-    // Validate appointment can be cancelled (not already cancelled/completed)
+    // Validate appointment can be cancelled
     if (appointment.status === 'completed') {
       return res.status(400).json({
         success: false, 
@@ -264,11 +294,15 @@ export const cancelAppointment = async (req: Request, res: Response) => {
       {
         status: 'cancelled',
         cancellationReason: reason,
-        cancelledBy: cancelledBy, // 'patient' or 'doctor'
+        cancelledBy: cancelledBy,
         cancelledAt: new Date()
       },
       { new: true }
     );
+
+    // Release the slot by removing this appointment's time from booked slots
+    const { date, time, doctorId } = appointment;
+    await releaseTimeSlot(doctorId, date, time);
 
     return res.status(200).json({
       success: true,
@@ -284,6 +318,28 @@ export const cancelAppointment = async (req: Request, res: Response) => {
     });
   }
 };
+
+// Helper function to release a time slot
+const releaseTimeSlot = async (doctorId: string, date: string, time: string) => {
+  try {
+    // Find the doctor's availability for this date
+    const doctor = await User.findById(doctorId);
+    if (!doctor?.availability) return;
+
+    const availability = doctor.availability.find(a => {
+      const availDate = new Date(a.date).toISOString().split('T')[0];
+      return availDate === date;
+    });
+
+    if (availability) {
+      // The slot is automatically released since we're not storing booked slots
+      // in the availability schema. They are managed through appointments.
+      console.log(`Released slot for doctor ${doctorId} on ${date} at ${time}`);
+    }
+  } catch (error) {
+    console.error('Error releasing time slot:', error);
+  }
+}
 
 // Reschedule appointment with new date and time
 export const rescheduleAppointment = async (req: Request, res: Response) => {
@@ -302,26 +358,23 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
     // Find existing appointment
     const appointment = await Appointment.findById(id);
     if (!appointment) {
-      return res.status(404).json({
+      return res.status(400).json({
         success: false,
         message: "Appointment not found"
       });
     }
 
-    // Validate appointment can be rescheduled
-    if (appointment.status === 'completed' || appointment.status === 'cancelled') {
-      return res.status(400).json({
-        success: false,
-        message: `Cannot reschedule a ${appointment.status} appointment`
-      });
-    }
+    // Store old date and time for releasing the slot
+    const oldDate = appointment.date;
+    const oldTime = appointment.time;
 
     // Check for conflicts with new time slot
     const existingAppointment = await Appointment.findOne({
       doctorId: appointment.doctorId,
       date: newDate,
       time: newTime,
-      _id: { $ne: id } // Exclude current appointment
+      _id: { $ne: id },
+      status: { $nin: ['cancelled', 'completed'] }
     });
 
     if (existingAppointment) {
@@ -338,15 +391,17 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
         date: newDate,
         time: newTime,
         rescheduledFrom: {
-          date: appointment.date,
-          time: appointment.time
+          date: oldDate,
+          time: oldTime
         },
         rescheduledReason: reason,
-        rescheduledAt: new Date(),
-        status: 'booked' // Reset status to booked
+        rescheduledAt: new Date()
       },
       { new: true }
     );
+
+    // Release the old time slot
+    await releaseTimeSlot(appointment.doctorId.toString(), oldDate, oldTime);
 
     return res.status(200).json({
       success: true,
