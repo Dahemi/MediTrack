@@ -22,6 +22,7 @@ import DoctorProfile from "./pages/doctor/DoctorProfile";
 import DoctorReports from "./pages/doctor/DoctorReports";
 import AvailableSlots from "./pages/user/AvailableSlots";
 import MyAppointments from "./pages/user/MyAppointments";
+import Pricing from "./pages/user/Pricing";
 
 function App() {
   return (
@@ -46,6 +47,7 @@ function App() {
             <Route path="/appointment/confirmation" element={<AppointmentConfirmation />}/>
             <Route path="/doctorsdir" element={<DoctorsDirectory />} />
             <Route path="/doctors/:id/slots" element={<AvailableSlots />} />
+            <Route path="/pricing" element={<Pricing />} />
             
             {/* Doctor Routes */}
             <Route path="/doctor/*" element={<DoctorLayout />}>

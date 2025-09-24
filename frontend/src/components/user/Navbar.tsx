@@ -43,12 +43,12 @@ const Navbar: React.FC = () => {
             >
               For Clinics
             </a>
-            <a
-              href="#pricing"
+            <Link
+              to="/pricing"
               className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
             >
               Pricing
-            </a>
+            </Link>
           </div>
 
           <div className="flex items-center space-x-4">
