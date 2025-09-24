@@ -37,7 +37,7 @@ const appointmentSchema = new Schema<IAppointment>(
     patientName: { type: String, required: true },
     patientAddress: { type: String, required: true },
     patientContact: { type: String, required: true },
-    doctorId: { type: Schema.Types.ObjectId, ref: "Doctor", required: true },
+    doctorId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     doctorName: { type: String },
     date: { type: String, required: true },
     time: { type: String, required: true },

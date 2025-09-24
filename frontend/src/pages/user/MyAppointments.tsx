@@ -45,7 +45,7 @@ const MyAppointments: React.FC = () => {
       try {
         console.log('Fetching appointments with user ID:', user.id); // Debug log
         
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/appointment/patient/${user.id}`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/appointment/patient/${user.id}`);
         const data = await response.json();
         
         console.log('API Response:', data); // Debug log
@@ -86,7 +86,7 @@ const MyAppointments: React.FC = () => {
     if (!modal.appointmentId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/appointment/${modal.appointmentId}/cancel`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/appointment/${modal.appointmentId}/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -113,7 +113,7 @@ const MyAppointments: React.FC = () => {
     if (!modal.appointmentId) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/appointment/${modal.appointmentId}/cancel`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/appointment/${modal.appointmentId}/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

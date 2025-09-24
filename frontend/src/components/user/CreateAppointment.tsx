@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { useAuth } from '../../context/AuthContext'; // Add this import
@@ -28,8 +28,8 @@ const CreateAppointment: React.FC = () => {
   const [formData, setFormData] = useState<AppointmentFormData>({
     patientId: user?.id || '', // Add user ID
     patientName: user?.name || '', // Pre-fill name if available
-    patientAddress: '',
-    patientContact: '',
+    patientAddress: '', // Will be filled by user
+    patientContact: '', // Will be filled by user
     doctorId: doctor?._id || '',
     doctorName: doctor?.fullName || '',
     date,
@@ -38,6 +38,13 @@ const CreateAppointment: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -51,8 +58,18 @@ const CreateAppointment: React.FC = () => {
     setLoading(true);
     setError('');
 
+    console.log('User data:', user); // Debug log
+    console.log('Form data:', formData); // Debug log
+
     if (!user?.id) {
       setError('You must be logged in to create an appointment');
+      setLoading(false);
+      return;
+    }
+
+    // Validate required fields
+    if (!formData.patientName || !formData.patientAddress || !formData.patientContact) {
+      setError('Please fill in all required fields');
       setLoading(false);
       return;
     }
@@ -60,7 +77,7 @@ const CreateAppointment: React.FC = () => {
     try {
       console.log('Creating appointment with data:', { ...formData, patientId: user.id }); // Debug log
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/appointment`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/appointment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

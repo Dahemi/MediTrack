@@ -7,7 +7,8 @@
     "dev": "nodemon --exec tsx src/server.ts",
     "start": "tsx src/server.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "create-test-doctor": "tsx src/scripts/createTestDoctor.ts"
+    "create-test-doctor": "tsx src/scripts/createTestDoctor.ts",
+    "create-admin": "tsx src/scripts/createAdmin.ts"
   },
   "keywords": [],
   "author": "",

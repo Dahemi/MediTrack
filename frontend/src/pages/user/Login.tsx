@@ -78,7 +78,7 @@ const Login: React.FC = () => {
         response = await loginDoctor(values);
         setSubmitStatus({
           type: "success",
-          message: `Welcome back, Dr. ${response.data?.user?.name}! Login successful.`,
+          message: `Welcome back, ${response.data?.user?.name}! Login successful.`,
         });
 
         // Set user in context and redirect to doctor dashboard
