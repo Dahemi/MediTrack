@@ -3,6 +3,7 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   UserPlusIcon,
+  XCircleIcon,
   EyeIcon,
   PencilIcon,
   TrashIcon,
@@ -582,6 +583,18 @@ const AdminUsers: React.FC = () => {
                   try {
                     setCreatingDoctor(true);
                     setError("");
+                    // Basic validation for required fields
+                    const requiredMissing = [
+                      doctorForm.fullName.trim() === "",
+                      doctorForm.email.trim() === "",
+                      doctorForm.specialization.trim() === "",
+                      !editingDoctor && doctorForm.password.trim() === "",
+                    ].some(Boolean);
+                    if (requiredMissing) {
+                      setError(editingDoctor ? "Please fill all required fields (Full Name, Email, Specialization)." : "Please fill all required fields (Full Name, Email, Specialization, Password)." );
+                      setCreatingDoctor(false);
+                      return;
+                    }
                     
                     if (editingDoctor) {
                       // Update existing doctor
