@@ -3,6 +3,28 @@ import { Appointment } from "../models/appointment.model.js";
 import User, { IUser } from "../models/user.model.js";
 import { Document } from "mongoose";
 import mongoose from "mongoose";
+import Queue from "../models/queue.model.js";
+
+// Helper to normalize date to Asia/Colombo timezone in YYYY-MM-DD format
+function normalizeDate(dateInput: string | Date): string {
+  // If input is a date string, use it directly if it's already in YYYY-MM-DD format
+  if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+    return dateInput;
+  }
+  
+  // For Date objects, get the date in Colombo timezone
+  const date = new Date(dateInput);
+  
+  // Get the date in Colombo timezone using Intl.DateTimeFormat
+  const colomboDate = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Colombo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date);
+  
+  return colomboDate;
+}
 
 // Helper to get start time for doctor on a given date
 function getDoctorStartTime(doctor: Document<unknown, {}, IUser, {}, {}> & IUser & Required<{ _id: unknown; }> & { __v: number; }, date: any) {
@@ -43,8 +65,11 @@ export const createAppointment = async (req: Request, res: Response) => {
       notes,
     } = req.body;
 
+    // Normalize date to Asia/Colombo timezone
+    const normalizedDate = normalizeDate(date);
+
     // Check if doctor already has an appointment at this date & time
-    const existingDoctor = await Appointment.findOne({ doctorId, date, time });
+    const existingDoctor = await Appointment.findOne({ doctorId, date: normalizedDate, time });
     if (existingDoctor) {
       return res.status(400).json({
         success: false,
@@ -53,7 +78,7 @@ export const createAppointment = async (req: Request, res: Response) => {
     }
 
     // Check if patient already has appointment at same time
-    const existingPatient = await Appointment.findOne({ patientId, date, time });
+    const existingPatient = await Appointment.findOne({ patientId, date: normalizedDate, time });
     if (existingPatient) {
       return res.status(400).json({
         success: false,
@@ -61,14 +86,12 @@ export const createAppointment = async (req: Request, res: Response) => {
       });
     }
 
-    // Find the max queueNumber for this doctor on this date
-    const lastAppointment = await Appointment.findOne({ doctorId, date }).sort({ queueNumber: -1 });
     // Get doctor availability for the date
     const doctor = await User.findById(doctorId);
     if (!doctor) {
       return res.status(404).json({ success: false, message: "Doctor not found" });
     }
-    const startTime = getDoctorStartTime(doctor, date);
+    const startTime = getDoctorStartTime(doctor, normalizedDate);
     if (!startTime) {
       return res.status(400).json({ success: false, message: "Doctor not available on this date" });
     }
@@ -80,6 +103,13 @@ export const createAppointment = async (req: Request, res: Response) => {
     }
     const queueNumber = slotIndex + 1;
 
+    // Create or ensure queue exists for this doctor and date (upsert)
+    await Queue.findOneAndUpdate(
+      { doctorId, date: normalizedDate },
+      { $setOnInsert: { status: "active" } },
+      { upsert: true, new: true }
+    );
+
     // Save new appointment
     const appointment = await Appointment.create({
       patientId, // Add this
@@ -88,7 +118,7 @@ export const createAppointment = async (req: Request, res: Response) => {
       patientContact,
       doctorId,
       doctorName,
-      date,
+      date: normalizedDate,
       time,
       queueNumber,
       notes,
