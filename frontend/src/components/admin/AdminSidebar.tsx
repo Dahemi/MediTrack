@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { HomeIcon, UsersIcon, CalendarDaysIcon, ChartBarIcon, ChevronDoubleLeftIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { HomeIcon, UsersIcon, CalendarDaysIcon, ChartBarIcon, ChevronDoubleLeftIcon, XMarkIcon, QueueListIcon } from "@heroicons/react/24/outline";
 
 interface AdminSidebarProps {
   sidebarOpen: boolean;
@@ -27,6 +27,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ sidebarOpen, setSidebarOpen
       name: "Appointments",
       href: "/admin/dashboard/appointments",
       icon: <CalendarDaysIcon className="w-5 h-5" />,
+    },
+    {
+      name: "Queue Monitor",
+      href: "/admin/dashboard/queues",
+      icon: <QueueListIcon className="w-5 h-5" />,
     },
     {
       name: "Reports",

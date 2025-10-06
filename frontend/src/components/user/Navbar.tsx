@@ -38,7 +38,7 @@ const Navbar: React.FC = () => {
               Features
             </a>
             <a
-              href="#clinics"
+              href="/queue-status"
               className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
             >
               For Clinics

@@ -6,6 +6,7 @@ import AdminOverview from "../../components/admin/AdminOverview";
 import AdminUsers from "../../components/admin/AdminUsers";
 import AdminAppointments from "../../components/admin/AdminAppointments";
 import AdminRoute from "../../components/admin/AdminRoute";
+import AdminQueueDashboard from "./AdminQueueDashboard";
 
 const AdminDashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -54,6 +55,7 @@ const AdminDashboard: React.FC = () => {
                   <Route path="/overview" element={<AdminOverview />} />
                   <Route path="/users" element={<AdminUsers />} />
                   <Route path="/appointments" element={<AdminAppointments />} />
+                  <Route path="/queues" element={<AdminQueueDashboard />} />
                   {/* Add more routes as needed */}
                 </Routes>
               </div>
@@ -63,7 +65,7 @@ const AdminDashboard: React.FC = () => {
           {/* Mobile sidebar overlay */}
           {isMobile && sidebarOpen && (
             <div
-              className="fixed inset-0 z-30 bg-black bg-opacity-50 transition-opacity"
+              className="fixed inset-0 z-30 bg-black/30 backdrop-blur-sm transition-opacity"
               onClick={() => setSidebarOpen(false)}
             />
           )}

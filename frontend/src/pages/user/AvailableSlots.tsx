@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMinutes, parseISO, addMonths, subMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, addMinutes, addMonths, subMonths } from "date-fns";
 import type { DoctorData } from "../../services/api";
 import Navbar from "../../components/user/Navbar";
 import Footer from "../../components/Footer";
@@ -19,8 +19,8 @@ function getSlotsForDay(
   });
   if (!avail) return [];
   const slots = [];
-  let start = parseISO(`${dateStr}T${avail.startTime}`);
-  const end = parseISO(`${dateStr}T${avail.endTime}`);
+  let start = new Date(`${dateStr}T${avail.startTime}`);
+  const end = new Date(`${dateStr}T${avail.endTime}`);
   for (let i = 0; i < avail.slots; i++) {
     const slotTime = addMinutes(start, i * 30);
     if (slotTime >= end) break;
@@ -42,7 +42,9 @@ const AvailableSlots: React.FC = () => {
   const [bookedAppointments, setBookedAppointments] = useState<{[key: string]: string[]}>({});
   const [loading, setLoading] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(
+    new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Colombo' }))
+  );
 
   // Calendar days for current month with proper week alignment
   const monthStart = startOfMonth(currentMonth);
@@ -58,7 +60,16 @@ const AvailableSlots: React.FC = () => {
   const lastDayOfWeek = calendarEnd.getDay();
   calendarEnd.setDate(calendarEnd.getDate() + (6 - lastDayOfWeek));
   
-  const days = useMemo(() => eachDayOfInterval({ start: calendarStart, end: calendarEnd }), [calendarStart, calendarEnd]);
+  // Build days array without relying on eachDayOfInterval to avoid type issues
+  const days = useMemo(() => {
+    const result: Date[] = [];
+    const cur = new Date(calendarStart);
+    while (cur <= calendarEnd) {
+      result.push(new Date(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+    return result;
+  }, [calendarStart, calendarEnd]);
 
   // Fetch booked appointments for the doctor
   const fetchBookedAppointments = async () => {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../services/api";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, addMinutes, addMonths, subMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, addMinutes, addMonths, subMonths } from "date-fns";
+import UpdateAvailability from "../../components/doctor/UpdateAvailability";
 
 interface AvailabilitySlot {
   day: string;
@@ -17,13 +18,13 @@ function getSlotsForDay(
 ) {
   // Handle both ISO string and YYYY-MM-DD string formats
   const avail = availability.find(a => {
-    const availDate = a.date.includes('T') ? format(parseISO(a.date), "yyyy-MM-dd") : a.date;
+    const availDate = a.date.includes('T') ? format(new Date(a.date), "yyyy-MM-dd") : a.date;
     return availDate === dateStr;
   });
   if (!avail) return [];
   const slots = [];
-  let start = parseISO(`${dateStr}T${avail.startTime}`);
-  const end = parseISO(`${dateStr}T${avail.endTime}`);
+  let start = new Date(`${dateStr}T${avail.startTime}`);
+  const end = new Date(`${dateStr}T${avail.endTime}`);
   for (let i = 0; i < avail.slots; i++) {
     const slotTime = addMinutes(start, i * 30);
     if (slotTime >= end) break;
@@ -38,6 +39,7 @@ const DoctorAvailability: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
 
   // Calendar days for current month with proper week alignment
   const monthStart = startOfMonth(currentMonth);
@@ -52,13 +54,22 @@ const DoctorAvailability: React.FC = () => {
   const calendarEnd = new Date(monthEnd);
   const lastDayOfWeek = calendarEnd.getDay();
   calendarEnd.setDate(calendarEnd.getDate() + (6 - lastDayOfWeek));
-  
-  const days = useMemo(() => eachDayOfInterval({ start: calendarStart, end: calendarEnd }), [calendarStart, calendarEnd]);
+
+  // Local helper to generate a date range by day to avoid date-fns dependency here
+  const days = useMemo(() => {
+    const result: Date[] = [];
+    const cur = new Date(calendarStart);
+    while (cur <= calendarEnd) {
+      result.push(new Date(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+    return result;
+  }, [calendarStart, calendarEnd]);
   
   // Get available dates from doctor's availability - fix date comparison
   const availableDates = availability.map(a => {
     // Ensure we're comparing dates correctly
-    const availDate = a.date.includes('T') ? format(parseISO(a.date), "yyyy-MM-dd") : a.date;
+    const availDate = a.date.includes('T') ? format(new Date(a.date), "yyyy-MM-dd") : a.date;
     console.log("Processing date:", a.date, "->", availDate);
     return availDate;
   });
@@ -93,9 +104,19 @@ const DoctorAvailability: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">My Availability</h1>
-        <p className="text-gray-600">Manage your available time slots for patient appointments</p>
+      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Availability</h1>
+          <p className="text-gray-600">Manage your available time slots for patient appointments</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowAvailabilityModal(true)}
+            className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg font-medium"
+          >
+            Update Availability
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -212,7 +233,7 @@ const DoctorAvailability: React.FC = () => {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold text-gray-900">
-                  Available Slots on {format(parseISO(selectedDate), "EEEE, MMMM do, yyyy")}
+                  Available Slots on {format(new Date(selectedDate), "EEEE, MMMM do, yyyy")}
                 </h3>
                 <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
                   {slots.length} slots
@@ -293,6 +314,16 @@ const DoctorAvailability: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Update Availability Modal */}
+      <UpdateAvailability
+        isOpen={showAvailabilityModal}
+        onClose={() => setShowAvailabilityModal(false)}
+        onUpdate={() => {
+          // Refresh availability after update
+          fetchAvailability();
+        }}
+      />
     </div>
   );
 };

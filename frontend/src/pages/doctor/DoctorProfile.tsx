@@ -392,7 +392,7 @@ const DoctorProfile: React.FC = () => {
 
       {/* Password Change Success Modal */}
       {showPasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
             <div className="p-6">
               <div className="flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mx-auto mb-4">
