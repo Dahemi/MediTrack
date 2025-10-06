@@ -18,6 +18,7 @@ export interface AppointmentUpdatePayload {
   newTime?: string;
   reason?: string;
   timestamp: Date;
+  date?: string; // Add date field for queue room broadcasting
 }
 
 export class SocketService {
@@ -171,6 +172,15 @@ export class SocketService {
     this.io.to("admin_room").emit("appointment_updated", {
       ...payload,
       adminNotification: true,
+    });
+
+    // Notify all patients monitoring this doctor's queue
+    // Use the date from payload if available, otherwise use today's date
+    const queueDate = payload.date || new Date().toISOString().split('T')[0];
+    const queueRoom = `queue_${payload.doctorId}_${queueDate}`;
+    this.io.to(queueRoom).emit("appointment_updated", {
+      ...payload,
+      message: this.getAppointmentUpdateMessage(payload),
     });
 
   }

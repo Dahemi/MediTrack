@@ -59,14 +59,23 @@ const AdminQueueDashboard: React.FC = () => {
     fetchQueues();
     fetchStats();
     
-    const unsubscribe = socketService.onQueueStatusUpdate((data) => {
+    const unsubscribeQueue = socketService.onQueueStatusUpdate((data) => {
       if (data.adminNotification) {
         fetchQueues();
         fetchStats();
       }
     });
 
-    return () => unsubscribe();
+    const unsubscribeAppointment = socketService.onAppointmentUpdate(() => {
+      // Refresh queues when any appointment is updated/created
+      fetchQueues();
+      fetchStats();
+    });
+
+    return () => {
+      unsubscribeQueue();
+      unsubscribeAppointment();
+    };
   }, [selectedDate, filterStatus]);
 
   const fetchQueues = async () => {

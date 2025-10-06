@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { QueueService } from "../services/QueueService.js";
 import { SocketService } from "../services/SocketService.js";
 import { Appointment } from "../models/appointment.model.js";
+import Queue from "../models/queue.model.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 
@@ -136,7 +137,7 @@ export const getQueueStatus = async (req: Request, res: Response): Promise<void>
       return;
     }
     
-    const queueStatus = await QueueService.getQueueStatus(doctorId, date);
+    const queueStatus = await QueueService.getQueueStatus(doctorId || '', date || '');
     
     res.status(200).json({
       success: true,
@@ -270,6 +271,20 @@ export const rescheduleAppointmentByDoctor = async (req: Request, res: Response)
       { new: true }
     );
 
+    // Broadcast appointment reschedule to relevant clients
+    try {
+      SocketService.broadcastAppointmentUpdate({
+        appointmentId: id || '',
+        doctorId: doctorId || '',
+        patientId: appointment.patientId?.toString() || '',
+        action: "rescheduled",
+        timestamp: new Date(),
+        date: newDate,
+      });
+    } catch (e) {
+      console.warn("Failed to broadcast appointment reschedule:", e);
+    }
+
     res.status(200).json({
       success: true,
       message: "Appointment rescheduled successfully by doctor",
@@ -357,6 +372,20 @@ export const cancelAppointmentByDoctor = async (req: Request, res: Response): Pr
       { new: true }
     );
 
+    // Broadcast appointment cancellation to relevant clients
+    try {
+      SocketService.broadcastAppointmentUpdate({
+        appointmentId: id || '',
+        doctorId: doctorId || '',
+        patientId: appointment.patientId?.toString() || '',
+        action: "cancelled",
+        timestamp: new Date(),
+        date: appointment.date,
+      });
+    } catch (e) {
+      console.warn("Failed to broadcast appointment cancellation:", e);
+    }
+
     res.status(200).json({
       success: true,
       message: "Appointment cancelled successfully by doctor",
@@ -442,7 +471,7 @@ export const debugDates = async (req: Request, res: Response): Promise<void> => 
         currentTime: now.toISOString(),
         colomboDate,
         isoDate,
-        allQueueDates: allQueues.map(q => ({ date: q.date, createdAt: q.createdAt })),
+        allQueueDates: allQueues.map((q: any) => ({ date: q.date, createdAt: q.createdAt })),
         totalQueues: allQueues.length,
         note: "Colombo date should be 2025-10-07 if it's October 7th in Sri Lanka"
       }

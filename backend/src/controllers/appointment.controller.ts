@@ -4,6 +4,7 @@ import User, { IUser } from "../models/user.model.js";
 import { Document } from "mongoose";
 import mongoose from "mongoose";
 import Queue from "../models/queue.model.js";
+import { SocketService } from "../services/SocketService.js";
 
 // Helper to normalize date to Asia/Colombo timezone in YYYY-MM-DD format
 function normalizeDate(dateInput: string | Date): string {
@@ -124,6 +125,21 @@ export const createAppointment = async (req: Request, res: Response) => {
       notes,
       status: "booked",
     });
+
+    // Broadcast appointment creation to relevant clients
+    try {
+      SocketService.broadcastAppointmentUpdate({
+        appointmentId: (appointment._id as any).toString(),
+        doctorId: doctorId,
+        patientId: patientId,
+        action: "updated",
+        timestamp: new Date(),
+        date: normalizedDate,
+      });
+    } catch (e) {
+      // Non-blocking - don't fail appointment creation if broadcast fails
+      console.warn("Failed to broadcast appointment creation:", e);
+    }
 
     return res.status(201).json({
       success: true,
@@ -300,6 +316,20 @@ export const cancelAppointment = async (req: Request, res: Response) => {
       { new: true }
     );
 
+    // Broadcast appointment cancellation to relevant clients
+    try {
+      SocketService.broadcastAppointmentUpdate({
+        appointmentId: id || '',
+        doctorId: appointment.doctorId?.toString() || '',
+        patientId: appointment.patientId?.toString() || '',
+        action: "cancelled",
+        timestamp: new Date(),
+        date: appointment.date,
+      });
+    } catch (e) {
+      console.warn("Failed to broadcast appointment cancellation:", e);
+    }
+
     return res.status(200).json({
       success: true,
       message: "Appointment cancelled successfully",
@@ -377,6 +407,20 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
       },
       { new: true }
     );
+
+    // Broadcast appointment reschedule to relevant clients
+    try {
+      SocketService.broadcastAppointmentUpdate({
+        appointmentId: id || '',
+        doctorId: appointment.doctorId?.toString() || '',
+        patientId: appointment.patientId?.toString() || '',
+        action: "rescheduled",
+        timestamp: new Date(),
+        date: newDate,
+      });
+    } catch (e) {
+      console.warn("Failed to broadcast appointment reschedule:", e);
+    }
 
     return res.status(200).json({
       success: true,
