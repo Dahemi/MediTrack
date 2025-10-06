@@ -23,6 +23,9 @@ import DoctorReports from "./pages/doctor/DoctorReports";
 import AvailableSlots from "./pages/user/AvailableSlots";
 import MyAppointments from "./pages/user/MyAppointments";
 import Pricing from "./pages/user/Pricing";
+import QueueStatusPage from "./pages/user/QueueStatusPage";
+import DoctorQueue from "./pages/doctor/DoctorQueue";
+import AdminQueueDashboard from "./pages/admin/AdminQueueDashboard";
 
 function App() {
   return (
@@ -42,6 +45,7 @@ function App() {
 
             {/* User Routes */}
             <Route path="/user/home" element={<HomePage />} />
+            <Route path="/queue-status" element={<QueueStatusPage />} />
             <Route path="/appointment/create" element={<CreateAppointment />} />
             <Route path="/my-appointments" element={<MyAppointments />} />
             <Route path="/appointment/confirmation" element={<AppointmentConfirmation />}/>
@@ -53,6 +57,7 @@ function App() {
             <Route path="/doctor/*" element={<DoctorLayout />}>
               <Route path="dashboard" element={<DoctorDashboard />} />
               <Route path="appointments" element={<DoctorAppointments />} />
+              <Route path="queue" element={<DoctorQueue />} />
               <Route path="patients" element={<DoctorPatients />} />
               <Route path="availability" element={<DoctorAvailability />} />
               <Route path="profile" element={<DoctorProfile />} />
