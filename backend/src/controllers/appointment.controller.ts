@@ -208,21 +208,59 @@ export const getAppointmentById = async (req: Request, res: Response) => {
 // Update appointment
 export const updateAppointment = async (req: Request, res: Response) => {
   try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // Find the existing appointment to get the original data
+    const existingAppointment = await Appointment.findById(id);
+    if (!existingAppointment) {
+      return res.status(404).json({ 
+        success: false,
+        message: "Appointment not found" 
+      });
+    }
+
+    // Update the appointment
     const appointment = await Appointment.findByIdAndUpdate(
-      req.params.id,
-      req.body,
+      id,
+      updateData,
       { new: true }
     );
 
     if (!appointment) {
-      return res.status(404).json({ message: "Appointment not found" });
+      return res.status(404).json({ 
+        success: false,
+        message: "Appointment not found" 
+      });
     }
 
-    return res.status(200).json(appointment);
+    // Broadcast appointment update to relevant clients
+    try {
+      SocketService.broadcastAppointmentUpdate({
+        appointmentId: id || '',
+        doctorId: appointment.doctorId?.toString() || '',
+        patientId: appointment.patientId?.toString() || '',
+        action: "updated",
+        timestamp: new Date(),
+        date: appointment.date,
+      });
+    } catch (e) {
+      console.warn("Failed to broadcast appointment update:", e);
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: appointment,
+      message: "Appointment updated successfully"
+    });
   } catch (error) {
     return res
       .status(500)
-      .json({ message: "Error updating appointment", error });
+      .json({ 
+        success: false,
+        message: "Error updating appointment", 
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
   }
 };
 
@@ -254,6 +292,20 @@ export const deleteAppointment = async (req: Request, res: Response) => {
 
     if (!appointment) {
       return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    // Broadcast appointment deletion to relevant clients
+    try {
+      SocketService.broadcastAppointmentUpdate({
+        appointmentId: req.params.id || '',
+        doctorId: appointment.doctorId?.toString() || '',
+        patientId: appointment.patientId?.toString() || '',
+        action: "cancelled",
+        timestamp: new Date(),
+        date: appointment.date,
+      });
+    } catch (e) {
+      console.warn("Failed to broadcast appointment deletion:", e);
     }
 
     return res

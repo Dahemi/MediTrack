@@ -49,17 +49,29 @@ const PatientQueueCard: React.FC<PatientQueueCardProps> = ({
       setLoading(true);
       setError('');
       
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/doctor/queue/status?doctorId=${doctorId}&date=${date}`
-      );
+      // Fetch both queue status and appointments like DoctorQueueCard does
+      const [queueResponse, appointmentsResponse] = await Promise.all([
+        fetch(
+          `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/doctor/queue/status?doctorId=${doctorId}&date=${date}`
+        ),
+        fetch(
+          `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/appointment/doctor/${doctorId}/date/${date}`
+        )
+      ]);
       
-      const data = await response.json();
+      const queueData = await queueResponse.json();
+      const appointmentsData = await appointmentsResponse.json();
       
-      if (data.success && data.data) {
-        setQueueData(data.data);
+      if (queueData.success && queueData.data) {
+        // Combine queue status with appointments data
+        const combinedData = {
+          ...queueData.data,
+          currentAppointments: appointmentsData.appointments || []
+        };
+        setQueueData(combinedData);
       } else {
         setQueueData(null);
-        setError(data.message || 'No queue found for this date');
+        setError(queueData.message || 'No queue found for this date');
       }
     } catch (error: any) {
       setError('Failed to fetch queue status');

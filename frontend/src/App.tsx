@@ -6,7 +6,6 @@ import HomePage from "./components/Home";
 import Register from "./pages/user/Register";
 import Login from "./pages/user/Login";
 import Verify from "./pages/user/Verify";
-import CreateAppointment from "./components/user/CreateAppointment";
 import AppointmentConfirmation from "./components/user/AppointmentConfirmation";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -46,7 +45,6 @@ function App() {
             {/* User Routes */}
             <Route path="/user/home" element={<HomePage />} />
             <Route path="/queue-status" element={<QueueStatusPage />} />
-            <Route path="/appointment/create" element={<CreateAppointment />} />
             <Route path="/my-appointments" element={<MyAppointments />} />
             <Route path="/appointment/confirmation" element={<AppointmentConfirmation />}/>
             <Route path="/doctorsdir" element={<DoctorsDirectory />} />
