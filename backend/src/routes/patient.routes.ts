@@ -3,6 +3,7 @@ import {
   firebaseLogin,
   doctorSignup,
   doctorLogin,
+  getUserById,
 } from "../controllers/patient.controller.js";
 
 const router = express.Router();
@@ -21,5 +22,10 @@ router.post("/doctor-signup", doctorSignup);
 // @desc    Login doctor
 // @access  Public
 router.post("/doctor-login", doctorLogin);
+
+// @route   GET /api/patient/user/:id
+// @desc    Get user details by ID
+// @access  Public (for now, can be restricted later)
+router.get("/user/:id", getUserById);
 
 export default router;

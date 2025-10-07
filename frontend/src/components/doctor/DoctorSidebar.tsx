@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { 
   HomeIcon, 
-  CalendarDaysIcon, 
   UserGroupIcon, 
   ChartBarIcon, 
   ChevronDoubleLeftIcon, 
@@ -29,19 +28,14 @@ const DoctorSidebar: React.FC<DoctorSidebarProps> = ({ sidebarOpen, setSidebarOp
       icon: <HomeIcon className="w-5 h-5" />,
     },
     {
-      name: "Appointments",
-      href: "/doctor/appointments",
-      icon: <CalendarDaysIcon className="w-5 h-5" />,
+      name: "Patient Management",
+      href: "/doctor/patients",
+      icon: <UserGroupIcon className="w-5 h-5" />,
     },
     {
       name: "Queue Management",
       href: "/doctor/queue",
       icon: <QueueListIcon className="w-5 h-5" />,
-    },
-    {
-      name: "Patients",
-      href: "/doctor/patients",
-      icon: <UserGroupIcon className="w-5 h-5" />,
     },
     {
       name: "Availability",
@@ -113,7 +107,7 @@ const DoctorSidebar: React.FC<DoctorSidebarProps> = ({ sidebarOpen, setSidebarOp
               <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg mr-3 ${isActive ? "bg-white text-blue-600 shadow-sm" : "bg-gray-100 text-gray-600 group-hover:bg-white group-hover:shadow-sm"}`}>
                 {item.icon}
               </span>
-              <span className={` ${!isOpen && !isMobile ? "hidden" : "block"}`}>{item.name}</span>
+              <span className={`text-left ${!isOpen && !isMobile ? "hidden" : "block"}`}>{item.name}</span>
             </NavLink>
           );
         })}

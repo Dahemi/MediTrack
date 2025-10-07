@@ -14,8 +14,7 @@ import DoctorManagement from "./pages/admin/DoctorManagement";
 import DoctorsDirectory from "./pages/user/DoctorsDirectory";
 import DoctorLayout from "./components/doctor/DoctorLayout";
 import DoctorDashboard from "./pages/doctor/DoctorDashboard";
-import DoctorAppointments from "./pages/doctor/DoctorAppointments";
-import DoctorPatients from "./pages/doctor/DoctorPatients";
+import PatientManagement from "./pages/doctor/PatientManagement";
 import DoctorAvailability from "./pages/doctor/DoctorAvailability";
 import DoctorProfile from "./pages/doctor/DoctorProfile";
 import DoctorReports from "./pages/doctor/DoctorReports";
@@ -54,9 +53,8 @@ function App() {
             {/* Doctor Routes */}
             <Route path="/doctor/*" element={<DoctorLayout />}>
               <Route path="dashboard" element={<DoctorDashboard />} />
-              <Route path="appointments" element={<DoctorAppointments />} />
+              <Route path="patients" element={<PatientManagement />} />
               <Route path="queue" element={<DoctorQueue />} />
-              <Route path="patients" element={<DoctorPatients />} />
               <Route path="availability" element={<DoctorAvailability />} />
               <Route path="profile" element={<DoctorProfile />} />
               <Route path="reports" element={<DoctorReports />} />
