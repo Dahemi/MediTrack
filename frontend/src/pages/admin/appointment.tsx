@@ -88,6 +88,12 @@ const Appointments: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">Appointments</h1>
+        <p className="text-lg text-gray-600">Manage and monitor all system appointments</p>
+      </div>
+      
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div className="bg-white p-4 rounded-lg shadow">

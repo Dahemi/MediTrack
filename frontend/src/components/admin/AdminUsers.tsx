@@ -165,7 +165,7 @@ const AdminUsers: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col items-center sm:flex-row sm:items-center sm:justify-between">
         <div className="w-full text-center">
-          <h2 className="text-3xl font-bold text-gray-900">User Management</h2>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">User Management</h1>
           <p className="mt-2 text-lg text-gray-600">Manage doctors and patients in the system</p>
         </div>
         <button

@@ -41,9 +41,6 @@ const DoctorQueue: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center p-2 bg-blue-100 rounded-2xl mb-2">
-            <SparklesIcon className="h-8 w-8 text-blue-600" />
-          </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
             Queue Management
           </h1>
