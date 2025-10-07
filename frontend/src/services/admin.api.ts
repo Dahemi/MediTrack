@@ -119,6 +119,22 @@ export interface AppointmentsResponse {
 
 // Admin API functions
 
+// Admin login
+export const loginAdmin = async (credentials: {
+  username: string;
+  password: string;
+}): Promise<ApiResponse<{ token: string; admin: any }>> => {
+  try {
+    const response = await adminApi.post("/admin/login", credentials);
+    return response.data;
+  } catch (error: any) {
+    throw error.response?.data || {
+      success: false,
+      message: "Network error occurred",
+    };
+  }
+};
+
 // Get admin profile
 export const getAdminProfile = async (): Promise<ApiResponse> => {
   try {

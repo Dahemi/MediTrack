@@ -7,7 +7,7 @@ import {
   updateDoctor,
   deleteDoctor,
 } from "../../services/api";
-import type { DoctorData, DoctorAvailability } from "../../services/api";
+import type { DoctorData } from "../../services/api";
 
 const doctorValidationSchema = Yup.object({
   fullName: Yup.string().required("Full name is required"),
@@ -60,7 +60,7 @@ const DoctorManagement: React.FC = () => {
     setLoading(true);
     try {
       const res = await getDoctors();
-      setDoctors(res.doctors || []);
+      setDoctors(res.data?.doctors || []);
     } catch (e: any) {
       setStatus({ type: "error", message: e.message });
     } finally {
@@ -96,7 +96,10 @@ const DoctorManagement: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50 flex flex-col items-center py-12 px-4">
       <div className="max-w-3xl w-full space-y-8">
-        <h2 className="text-3xl font-bold text-gray-900 text-center">Doctor Management</h2>
+        <div className="text-center">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">Doctor Management</h1>
+          <p className="text-lg text-gray-600">Create and manage doctor profiles and availability</p>
+        </div>
         {/* Status Message */}
         {status.type && (
           <div className={`p-4 rounded-lg ${status.type === "success" ? "bg-green-50 border border-green-200 text-green-800" : "bg-red-50 border border-red-200 text-red-800"}`}>
@@ -128,7 +131,7 @@ const DoctorManagement: React.FC = () => {
               }
             }}
           >
-            {({ values, isSubmitting, isValid, dirty, setFieldValue }) => (
+            {({ values, isSubmitting, isValid, dirty }) => (
               <Form className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -171,7 +174,7 @@ const DoctorManagement: React.FC = () => {
                   <FieldArray name="availability">
                     {({ remove, push }) => (
                       <div className="space-y-4">
-                        {values.availability.map((a, idx) => (
+                        {values.availability.map((_, idx) => (
                           <div key={idx} className="grid grid-cols-6 gap-2 items-end">
                             <div>
                               <Field name={`availability.${idx}.day`} placeholder="Day" className="w-full px-2 py-1 border border-gray-300 rounded-lg" />

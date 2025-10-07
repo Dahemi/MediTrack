@@ -120,8 +120,8 @@ const AdminOverview: React.FC = () => {
     <div className="space-y-8">
       {/* Page Header */}
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-900">Dashboard Overview</h2>
-        <p className="mt-2 text-lg text-gray-600">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">Dashboard Overview</h1>
+        <p className="text-lg text-gray-600">
           Real-time insights into your hospital management system
         </p>
       </div>

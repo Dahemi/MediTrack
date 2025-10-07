@@ -1,11 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { Cog6ToothIcon, ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
 import Logo from "./logo";
 
 const Navbar: React.FC = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -38,7 +52,7 @@ const Navbar: React.FC = () => {
               Features
             </a>
             <a
-              href="#clinics"
+              href="/queue-status"
               className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
             >
               For Clinics
@@ -53,68 +67,119 @@ const Navbar: React.FC = () => {
 
           <div className="flex items-center space-x-4">
             {isAuthenticated && user ? (
-              <div className="relative">
+              <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setShowDropdown(!showDropdown)}
-                  className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 transition-colors"
+                  className="flex items-center gap-3 rounded-2xl px-2 py-1.5 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  <img
-                    src={
-                      user.photoURL ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        user.name
-                      )}&background=3b82f6&color=fff`
-                    }
-                    alt={user.name}
-                    className="w-8 h-8 rounded-full object-cover border-2 border-blue-100"
-                  />
-                  <span className="font-medium">{user.name}</span>
-                  <svg
-                    className={`w-4 h-4 transition-transform ${
-                      showDropdown ? "rotate-180" : ""
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
+                  <div className="h-9 w-9 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center text-white text-sm shadow-sm overflow-hidden">
+                    {user.photoURL ? (
+                      <img 
+                        src={user.photoURL} 
+                        alt={user.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback to initials if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            parent.textContent = user.name.charAt(0);
+                          }
+                        }}
+                      />
+                    ) : (
+                      user.name.charAt(0)
+                    )}
+                  </div>
+                  <div className="text-left leading-tight hidden sm:block">
+                    <p className="text-sm font-medium text-gray-900">
+                      {user.name}
+                    </p>
+                    <p className="text-xs text-gray-500">Patient</p>
+                  </div>
                 </button>
 
                 {showDropdown && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                    <div className="px-4 py-2 border-b border-gray-100">
-                      <p className="text-sm font-medium text-gray-900">
-                        {user.name}
-                      </p>
-                      <p className="text-sm text-gray-500">{user.email}</p>
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl z-50 border border-gray-100 overflow-hidden">
+                    {/* Patient info */}
+                    <div className="px-5 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+                      <div className="flex flex-col items-center text-center space-y-2">
+                        <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center text-white text-lg overflow-hidden">
+                          {user.photoURL ? (
+                            <img 
+                              src={user.photoURL} 
+                              alt={user.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Fallback to initials if image fails to load
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  parent.textContent = user.name.charAt(0);
+                                }
+                              }}
+                            />
+                          ) : (
+                            user.name.charAt(0)
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">
+                            {user.name}
+                          </p>
+                          <p className="text-xs text-blue-100">{user.email}</p>
+                          <p className="text-xs text-blue-100 mt-1">
+                            Patient Account
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <Link
-                      to="/doctorsdir"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setShowDropdown(false)}
-                    >
-                      Book Appointment
-                    </Link>
-                    <Link
-                      to="/my-appointments"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setShowDropdown(false)}
-                    >
-                      My Appointments
-                    </Link>
-                    <hr className="my-1" />
-                    <button
-                      onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      Sign Out
-                    </button>
+
+                    {/* Menu */}
+                    <div className="py-2">
+                      <Link
+                        to="/doctorsdir"
+                        onClick={() => setShowDropdown(false)}
+                        className="flex items-center w-full px-5 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <svg className="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Book Appointment
+                      </Link>
+
+                      <Link
+                        to="/my-appointments"
+                        onClick={() => setShowDropdown(false)}
+                        className="flex items-center w-full px-5 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <svg className="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        My Appointments
+                      </Link>
+
+                      <button
+                        onClick={() => {
+                          setShowDropdown(false);
+                          // Navigate to profile settings
+                        }}
+                        className="flex items-center w-full px-5 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <Cog6ToothIcon className="mr-3 h-5 w-5" />
+                        Settings
+                      </button>
+
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center w-full px-5 py-2 text-sm text-red-600 hover:bg-red-50"
+                      >
+                        <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5" />
+                        Sign out
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

@@ -23,6 +23,9 @@ const UpdateAvailability: React.FC<UpdateAvailabilityProps> = ({ isOpen, onClose
   const [availability, setAvailability] = useState<AvailabilitySlot[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -122,12 +125,12 @@ const UpdateAvailability: React.FC<UpdateAvailabilityProps> = ({ isOpen, onClose
       
       console.log("Save response:", response.data);
       onUpdate();
-      onClose();
-      alert("Availability updated successfully!");
+      setShowSuccess(true);
     } catch (error: any) {
       console.error("Error updating availability:", error);
       console.error("Error response:", error.response?.data);
-      alert(`Failed to update availability: ${error.response?.data?.message || error.message}`);
+      setErrorMessage(error.response?.data?.message || error.message || "Failed to update availability");
+      setShowError(true);
     } finally {
       setSaving(false);
     }
@@ -136,7 +139,7 @@ const UpdateAvailability: React.FC<UpdateAvailabilityProps> = ({ isOpen, onClose
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -285,6 +288,52 @@ const UpdateAvailability: React.FC<UpdateAvailabilityProps> = ({ isOpen, onClose
           </div>
         </div>
       </div>
+
+      {/* Success Modal (nested) */}
+      {showSuccess && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full border border-gray-100">
+            <div className="p-6 text-center">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">Availability updated</h3>
+              <p className="text-sm text-gray-600 mb-6">Your availability has been saved successfully.</p>
+              <button
+                onClick={() => { setShowSuccess(false); onClose(); }}
+                className="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold shadow-sm hover:shadow-md transition-all"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal (nested) */}
+      {showError && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full border border-gray-100">
+            <div className="p-6 text-center">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">Update failed</h3>
+              <p className="text-sm text-gray-600 mb-6">{errorMessage}</p>
+              <button
+                onClick={() => { setShowError(false); }}
+                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold shadow-sm hover:shadow-md transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

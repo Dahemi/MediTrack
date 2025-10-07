@@ -3,6 +3,7 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   UserPlusIcon,
+  XCircleIcon,
   EyeIcon,
   PencilIcon,
   TrashIcon,
@@ -164,7 +165,7 @@ const AdminUsers: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col items-center sm:flex-row sm:items-center sm:justify-between">
         <div className="w-full text-center">
-          <h2 className="text-3xl font-bold text-gray-900">User Management</h2>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">User Management</h1>
           <p className="mt-2 text-lg text-gray-600">Manage doctors and patients in the system</p>
         </div>
         <button
@@ -426,7 +427,7 @@ const AdminUsers: React.FC = () => {
 
       {/* Add Doctor Modal */}
       {showAddDoctor && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4 py-6">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center px-4 py-6">
           <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
@@ -582,6 +583,18 @@ const AdminUsers: React.FC = () => {
                   try {
                     setCreatingDoctor(true);
                     setError("");
+                    // Basic validation for required fields
+                    const requiredMissing = [
+                      doctorForm.fullName.trim() === "",
+                      doctorForm.email.trim() === "",
+                      doctorForm.specialization.trim() === "",
+                      !editingDoctor && doctorForm.password.trim() === "",
+                    ].some(Boolean);
+                    if (requiredMissing) {
+                      setError(editingDoctor ? "Please fill all required fields (Full Name, Email, Specialization)." : "Please fill all required fields (Full Name, Email, Specialization, Password)." );
+                      setCreatingDoctor(false);
+                      return;
+                    }
                     
                     if (editingDoctor) {
                       // Update existing doctor

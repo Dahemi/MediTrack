@@ -18,19 +18,58 @@ const DoctorDashboard: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
+  const [totalPatients, setTotalPatients] = useState(0);
+  const [pendingReviews, setPendingReviews] = useState(0);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
-  useEffect(() => {
+  const fetchDashboardData = async () => {
     if (!user?.id) return;
     setLoading(true);
-    api
-      .get(`/appointment/doctor/${user.id}/date/${selectedDate}`)
-      .then((res) => {
-        setAppointments(res.data.appointments || []);
-      })
-      .catch(() => {
-        setAppointments([]);
-      })
-      .finally(() => setLoading(false));
+    try {
+      // Fetch appointments for selected date
+      const appointmentsRes = await api.get(`/appointment/doctor/${user.id}/date/${selectedDate}`);
+      setAppointments(appointmentsRes.data.appointments || []);
+
+      // Fetch all appointments to calculate stats
+      const allAppointmentsRes = await api.get(`/appointment/doctor/${user.id}`);
+      const allAppointments = allAppointmentsRes.data.appointments || [];
+      
+      // Calculate total unique patients
+      const uniquePatients = new Set(allAppointments.map((apt: any) => apt.patientName));
+      setTotalPatients(uniquePatients.size);
+
+      // Calculate pending reviews (appointments that need attention)
+      const pendingCount = allAppointments.filter((apt: any) => 
+        apt.status === 'booked' && new Date(apt.date) <= new Date()
+      ).length;
+      setPendingReviews(pendingCount);
+
+      // Generate recent activity from appointments
+      const recentAppointments = allAppointments
+        .sort((a: any, b: any) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime())
+        .slice(0, 3)
+        .map((apt: any) => ({
+          id: apt._id,
+          type: apt.status === 'completed' ? 'completed' : apt.status === 'booked' ? 'scheduled' : 'updated',
+          patientName: apt.patientName,
+          time: format(new Date(apt.createdAt || apt.date), 'MMM dd, yyyy'),
+          status: apt.status
+        }));
+      setRecentActivity(recentAppointments);
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setAppointments([]);
+      setTotalPatients(0);
+      setPendingReviews(0);
+      setRecentActivity([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
   }, [selectedDate, user?.id]);
 
   return (
@@ -106,8 +145,8 @@ const DoctorDashboard: React.FC = () => {
                 <p className="text-sm font-medium text-gray-600">
                   Total Patients
                 </p>
-                <p className="text-3xl font-bold text-gray-900">247</p>
-                <p className="text-xs text-blue-600 font-medium">+12 this month</p>
+                <p className="text-3xl font-bold text-gray-900">{totalPatients}</p>
+                <p className="text-xs text-blue-600 font-medium">Total patients</p>
               </div>
             </div>
           </div>
@@ -133,7 +172,7 @@ const DoctorDashboard: React.FC = () => {
                 <p className="text-sm font-medium text-gray-600">
                   Pending Reviews
                 </p>
-                <p className="text-3xl font-bold text-gray-900">8</p>
+                <p className="text-3xl font-bold text-gray-900">{pendingReviews}</p>
                 <p className="text-xs text-yellow-600 font-medium">Needs attention</p>
               </div>
             </div>
@@ -147,31 +186,6 @@ const DoctorDashboard: React.FC = () => {
               Quick Actions
             </h3>
             <div className="space-y-4">
-              <button className="w-full text-left p-4 border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 group">
-                <div className="flex items-center">
-                  <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg group-hover:shadow-xl transition-shadow duration-200">
-                    <svg
-                      className="w-5 h-5 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                      />
-                    </svg>
-                  </div>
-                  <div className="ml-4">
-                    <span className="text-sm font-semibold text-gray-900 group-hover:text-blue-700">
-                      Add New Appointment
-                    </span>
-                    <p className="text-xs text-gray-500">Schedule a new patient visit</p>
-                  </div>
-                </div>
-              </button>
 
               <button className="w-full text-left p-4 border border-gray-200 rounded-xl hover:bg-green-50 hover:border-green-300 transition-all duration-200 group">
                 <div className="flex items-center">
@@ -235,35 +249,33 @@ const DoctorDashboard: React.FC = () => {
               Recent Activity
             </h3>
             <div className="space-y-4">
-              <div className="flex items-start space-x-3 p-3 bg-green-50 rounded-xl border border-green-200">
-                <div className="w-3 h-3 bg-green-500 rounded-full mt-2"></div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    Appointment with John Doe completed
-                  </p>
-                  <p className="text-xs text-gray-500">2 hours ago</p>
+              {recentActivity.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 text-sm">No recent activity</p>
                 </div>
-              </div>
-
-              <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
-                <div className="w-3 h-3 bg-blue-500 rounded-full mt-2"></div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    New appointment scheduled
-                  </p>
-                  <p className="text-xs text-gray-500">4 hours ago</p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-xl border border-yellow-200">
-                <div className="w-3 h-3 bg-yellow-500 rounded-full mt-2"></div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    Patient record updated
-                  </p>
-                  <p className="text-xs text-gray-500">1 day ago</p>
-                </div>
-              </div>
+              ) : (
+                recentActivity.map((activity) => (
+                  <div key={activity.id} className={`flex items-start space-x-3 p-3 rounded-xl border ${
+                    activity.type === 'completed' ? 'bg-green-50 border-green-200' :
+                    activity.type === 'scheduled' ? 'bg-blue-50 border-blue-200' :
+                    'bg-yellow-50 border-yellow-200'
+                  }`}>
+                    <div className={`w-3 h-3 rounded-full mt-2 ${
+                      activity.type === 'completed' ? 'bg-green-500' :
+                      activity.type === 'scheduled' ? 'bg-blue-500' :
+                      'bg-yellow-500'
+                    }`}></div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {activity.type === 'completed' ? `Appointment with ${activity.patientName} completed` :
+                         activity.type === 'scheduled' ? `New appointment with ${activity.patientName} scheduled` :
+                         `Appointment with ${activity.patientName} updated`}
+                      </p>
+                      <p className="text-xs text-gray-500">{activity.time}</p>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

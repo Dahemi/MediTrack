@@ -6,7 +6,6 @@ import HomePage from "./components/Home";
 import Register from "./pages/user/Register";
 import Login from "./pages/user/Login";
 import Verify from "./pages/user/Verify";
-import CreateAppointment from "./components/user/CreateAppointment";
 import AppointmentConfirmation from "./components/user/AppointmentConfirmation";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -15,14 +14,16 @@ import DoctorManagement from "./pages/admin/DoctorManagement";
 import DoctorsDirectory from "./pages/user/DoctorsDirectory";
 import DoctorLayout from "./components/doctor/DoctorLayout";
 import DoctorDashboard from "./pages/doctor/DoctorDashboard";
-import DoctorAppointments from "./pages/doctor/DoctorAppointments";
-import DoctorPatients from "./pages/doctor/DoctorPatients";
+import PatientManagement from "./pages/doctor/PatientManagement";
 import DoctorAvailability from "./pages/doctor/DoctorAvailability";
 import DoctorProfile from "./pages/doctor/DoctorProfile";
 import DoctorReports from "./pages/doctor/DoctorReports";
 import AvailableSlots from "./pages/user/AvailableSlots";
 import MyAppointments from "./pages/user/MyAppointments";
 import Pricing from "./pages/user/Pricing";
+import QueueStatusPage from "./pages/user/QueueStatusPage";
+import DoctorQueue from "./pages/doctor/DoctorQueue";
+import AdminQueueDashboard from "./pages/admin/AdminQueueDashboard";
 
 function App() {
   return (
@@ -42,7 +43,7 @@ function App() {
 
             {/* User Routes */}
             <Route path="/user/home" element={<HomePage />} />
-            <Route path="/appointment/create" element={<CreateAppointment />} />
+            <Route path="/queue-status" element={<QueueStatusPage />} />
             <Route path="/my-appointments" element={<MyAppointments />} />
             <Route path="/appointment/confirmation" element={<AppointmentConfirmation />}/>
             <Route path="/doctorsdir" element={<DoctorsDirectory />} />
@@ -52,8 +53,8 @@ function App() {
             {/* Doctor Routes */}
             <Route path="/doctor/*" element={<DoctorLayout />}>
               <Route path="dashboard" element={<DoctorDashboard />} />
-              <Route path="appointments" element={<DoctorAppointments />} />
-              <Route path="patients" element={<DoctorPatients />} />
+              <Route path="patients" element={<PatientManagement />} />
+              <Route path="queue" element={<DoctorQueue />} />
               <Route path="availability" element={<DoctorAvailability />} />
               <Route path="profile" element={<DoctorProfile />} />
               <Route path="reports" element={<DoctorReports />} />

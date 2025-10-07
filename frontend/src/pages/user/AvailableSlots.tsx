@@ -1,10 +1,10 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMinutes, parseISO, addMonths, subMonths } from "date-fns";
+import { useLocation, useNavigate } from "react-router-dom";
+import { format, startOfMonth, endOfMonth, addMinutes, addMonths, subMonths } from "date-fns";
 import type { DoctorData } from "../../services/api";
 import Navbar from "../../components/user/Navbar";
 import Footer from "../../components/Footer";
-import { useNavigate } from "react-router-dom";
+import CreateAppointmentModal from "../../components/user/CreateAppointmentModal";
 
 function getSlotsForDay(
   availability: { date: string; startTime: string; endTime: string; slots: number }[],
@@ -19,8 +19,8 @@ function getSlotsForDay(
   });
   if (!avail) return [];
   const slots = [];
-  let start = parseISO(`${dateStr}T${avail.startTime}`);
-  const end = parseISO(`${dateStr}T${avail.endTime}`);
+  let start = new Date(`${dateStr}T${avail.startTime}`);
+  const end = new Date(`${dateStr}T${avail.endTime}`);
   for (let i = 0; i < avail.slots; i++) {
     const slotTime = addMinutes(start, i * 30);
     if (slotTime >= end) break;
@@ -37,12 +37,17 @@ const AvailableSlots: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const doctor: DoctorData = location.state?.doctor;
+  const rescheduleAppointmentId: string | null = location.state?.rescheduleAppointmentId || null;
+  const existingAppointment: any = location.state?.existingAppointment || null;
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [bookedAppointments, setBookedAppointments] = useState<{[key: string]: string[]}>({});
   const [loading, setLoading] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(
+    new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Colombo' }))
+  );
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
 
   // Calendar days for current month with proper week alignment
   const monthStart = startOfMonth(currentMonth);
@@ -58,7 +63,16 @@ const AvailableSlots: React.FC = () => {
   const lastDayOfWeek = calendarEnd.getDay();
   calendarEnd.setDate(calendarEnd.getDate() + (6 - lastDayOfWeek));
   
-  const days = useMemo(() => eachDayOfInterval({ start: calendarStart, end: calendarEnd }), [calendarStart, calendarEnd]);
+  // Build days array without relying on eachDayOfInterval to avoid type issues
+  const days = useMemo(() => {
+    const result: Date[] = [];
+    const cur = new Date(calendarStart);
+    while (cur <= calendarEnd) {
+      result.push(new Date(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+    return result;
+  }, [calendarStart, calendarEnd]);
 
   // Fetch booked appointments for the doctor
   const fetchBookedAppointments = async () => {
@@ -287,19 +301,34 @@ const AvailableSlots: React.FC = () => {
         <button
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 mt-4"
           disabled={!selectedDate || !selectedSlot}
-          onClick={() => {
-            navigate("/appointment/create", {
-              state: {
-                doctor: doctor,
-                date: selectedDate,
-                time: selectedSlot,
-              },
-            });
-          }}
+          onClick={() => setShowAppointmentModal(true)}
         >
-          Book an Appointment
+          {rescheduleAppointmentId ? "Reschedule Appointment" : "Book an Appointment"}
         </button>
       </main>
+      
+      {/* Appointment Modal */}
+      <CreateAppointmentModal
+        isOpen={showAppointmentModal}
+        onClose={() => setShowAppointmentModal(false)}
+        doctor={doctor}
+        selectedDate={selectedDate || ''}
+        selectedTime={selectedSlot || ''}
+        rescheduleAppointmentId={rescheduleAppointmentId}
+        existingAppointment={existingAppointment}
+        onSuccess={(appointment) => {
+          console.log('Appointment created/rescheduled:', appointment);
+          // Navigate to confirmation page
+          navigate('/appointment/confirmation', {
+            state: {
+              appointment: appointment,
+              doctor: doctor,
+              isReschedule: !!rescheduleAppointmentId
+            }
+          });
+        }}
+      />
+      
       <Footer />
     </div>
   );

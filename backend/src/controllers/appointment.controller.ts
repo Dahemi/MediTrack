@@ -3,6 +3,29 @@ import { Appointment } from "../models/appointment.model.js";
 import User, { IUser } from "../models/user.model.js";
 import { Document } from "mongoose";
 import mongoose from "mongoose";
+import Queue from "../models/queue.model.js";
+import { SocketService } from "../services/SocketService.js";
+
+// Helper to normalize date to Asia/Colombo timezone in YYYY-MM-DD format
+function normalizeDate(dateInput: string | Date): string {
+  // If input is a date string, use it directly if it's already in YYYY-MM-DD format
+  if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+    return dateInput;
+  }
+  
+  // For Date objects, get the date in Colombo timezone
+  const date = new Date(dateInput);
+  
+  // Get the date in Colombo timezone using Intl.DateTimeFormat
+  const colomboDate = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Colombo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date);
+  
+  return colomboDate;
+}
 
 // Helper to get start time for doctor on a given date
 function getDoctorStartTime(doctor: Document<unknown, {}, IUser, {}, {}> & IUser & Required<{ _id: unknown; }> & { __v: number; }, date: any) {
@@ -43,8 +66,11 @@ export const createAppointment = async (req: Request, res: Response) => {
       notes,
     } = req.body;
 
+    // Normalize date to Asia/Colombo timezone
+    const normalizedDate = normalizeDate(date);
+
     // Check if doctor already has an appointment at this date & time
-    const existingDoctor = await Appointment.findOne({ doctorId, date, time });
+    const existingDoctor = await Appointment.findOne({ doctorId, date: normalizedDate, time });
     if (existingDoctor) {
       return res.status(400).json({
         success: false,
@@ -53,7 +79,7 @@ export const createAppointment = async (req: Request, res: Response) => {
     }
 
     // Check if patient already has appointment at same time
-    const existingPatient = await Appointment.findOne({ patientId, date, time });
+    const existingPatient = await Appointment.findOne({ patientId, date: normalizedDate, time });
     if (existingPatient) {
       return res.status(400).json({
         success: false,
@@ -61,14 +87,12 @@ export const createAppointment = async (req: Request, res: Response) => {
       });
     }
 
-    // Find the max queueNumber for this doctor on this date
-    const lastAppointment = await Appointment.findOne({ doctorId, date }).sort({ queueNumber: -1 });
     // Get doctor availability for the date
     const doctor = await User.findById(doctorId);
     if (!doctor) {
       return res.status(404).json({ success: false, message: "Doctor not found" });
     }
-    const startTime = getDoctorStartTime(doctor, date);
+    const startTime = getDoctorStartTime(doctor, normalizedDate);
     if (!startTime) {
       return res.status(400).json({ success: false, message: "Doctor not available on this date" });
     }
@@ -80,6 +104,13 @@ export const createAppointment = async (req: Request, res: Response) => {
     }
     const queueNumber = slotIndex + 1;
 
+    // Create or ensure queue exists for this doctor and date (upsert)
+    await Queue.findOneAndUpdate(
+      { doctorId, date: normalizedDate },
+      { $setOnInsert: { status: "active" } },
+      { upsert: true, new: true }
+    );
+
     // Save new appointment
     const appointment = await Appointment.create({
       patientId, // Add this
@@ -88,12 +119,27 @@ export const createAppointment = async (req: Request, res: Response) => {
       patientContact,
       doctorId,
       doctorName,
-      date,
+      date: normalizedDate,
       time,
       queueNumber,
       notes,
       status: "booked",
     });
+
+    // Broadcast appointment creation to relevant clients
+    try {
+      SocketService.broadcastAppointmentUpdate({
+        appointmentId: (appointment._id as any).toString(),
+        doctorId: doctorId,
+        patientId: patientId,
+        action: "updated",
+        timestamp: new Date(),
+        date: normalizedDate,
+      });
+    } catch (e) {
+      // Non-blocking - don't fail appointment creation if broadcast fails
+      console.warn("Failed to broadcast appointment creation:", e);
+    }
 
     return res.status(201).json({
       success: true,
@@ -162,21 +208,59 @@ export const getAppointmentById = async (req: Request, res: Response) => {
 // Update appointment
 export const updateAppointment = async (req: Request, res: Response) => {
   try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // Find the existing appointment to get the original data
+    const existingAppointment = await Appointment.findById(id);
+    if (!existingAppointment) {
+      return res.status(404).json({ 
+        success: false,
+        message: "Appointment not found" 
+      });
+    }
+
+    // Update the appointment
     const appointment = await Appointment.findByIdAndUpdate(
-      req.params.id,
-      req.body,
+      id,
+      updateData,
       { new: true }
     );
 
     if (!appointment) {
-      return res.status(404).json({ message: "Appointment not found" });
+      return res.status(404).json({ 
+        success: false,
+        message: "Appointment not found" 
+      });
     }
 
-    return res.status(200).json(appointment);
+    // Broadcast appointment update to relevant clients
+    try {
+      SocketService.broadcastAppointmentUpdate({
+        appointmentId: id || '',
+        doctorId: appointment.doctorId?.toString() || '',
+        patientId: appointment.patientId?.toString() || '',
+        action: "updated",
+        timestamp: new Date(),
+        date: appointment.date,
+      });
+    } catch (e) {
+      console.warn("Failed to broadcast appointment update:", e);
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: appointment,
+      message: "Appointment updated successfully"
+    });
   } catch (error) {
     return res
       .status(500)
-      .json({ message: "Error updating appointment", error });
+      .json({ 
+        success: false,
+        message: "Error updating appointment", 
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
   }
 };
 
@@ -208,6 +292,20 @@ export const deleteAppointment = async (req: Request, res: Response) => {
 
     if (!appointment) {
       return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    // Broadcast appointment deletion to relevant clients
+    try {
+      SocketService.broadcastAppointmentUpdate({
+        appointmentId: req.params.id || '',
+        doctorId: appointment.doctorId?.toString() || '',
+        patientId: appointment.patientId?.toString() || '',
+        action: "cancelled",
+        timestamp: new Date(),
+        date: appointment.date,
+      });
+    } catch (e) {
+      console.warn("Failed to broadcast appointment deletion:", e);
     }
 
     return res
@@ -269,6 +367,20 @@ export const cancelAppointment = async (req: Request, res: Response) => {
       },
       { new: true }
     );
+
+    // Broadcast appointment cancellation to relevant clients
+    try {
+      SocketService.broadcastAppointmentUpdate({
+        appointmentId: id || '',
+        doctorId: appointment.doctorId?.toString() || '',
+        patientId: appointment.patientId?.toString() || '',
+        action: "cancelled",
+        timestamp: new Date(),
+        date: appointment.date,
+      });
+    } catch (e) {
+      console.warn("Failed to broadcast appointment cancellation:", e);
+    }
 
     return res.status(200).json({
       success: true,
@@ -347,6 +459,20 @@ export const rescheduleAppointment = async (req: Request, res: Response) => {
       },
       { new: true }
     );
+
+    // Broadcast appointment reschedule to relevant clients
+    try {
+      SocketService.broadcastAppointmentUpdate({
+        appointmentId: id || '',
+        doctorId: appointment.doctorId?.toString() || '',
+        patientId: appointment.patientId?.toString() || '',
+        action: "rescheduled",
+        timestamp: new Date(),
+        date: newDate,
+      });
+    } catch (e) {
+      console.warn("Failed to broadcast appointment reschedule:", e);
+    }
 
     return res.status(200).json({
       success: true,

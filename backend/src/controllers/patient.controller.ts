@@ -276,3 +276,50 @@ export const doctorLogin = async (
     });
   }
 };
+
+
+// Get user details by ID
+export const getUserById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+      return;
+    }
+
+    const user = await User.findById(id).select('name email photoURL profilePictureUrl userType');
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        photoURL: user.photoURL,
+        profilePictureUrl: user.profilePictureUrl,
+        userType: user.userType
+      }
+    });
+  } catch (error: any) {
+    console.error("Get user error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error. Please try again later.",
+    });
+  }
+};
