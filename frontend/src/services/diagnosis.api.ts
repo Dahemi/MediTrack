@@ -61,7 +61,7 @@ export interface RevenueStats {
   totalRegistrationFees: number;
   totalDoctorFees: number;
   totalDrugsCost: number;
-  diagnosisCount: number;
+  totalDiagnoses: number;
   averagePerDiagnosis: number;
 }
 
@@ -75,7 +75,7 @@ export const createDiagnosis = async (data: CreateDiagnosisData): Promise<Diagno
         Authorization: `Bearer ${token}`,
       },
     });
-    return response.data.diagnosis;
+    return response.data.data;
   } catch (error: any) {
     console.error('Diagnosis API Error:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || "Failed to create diagnosis");
@@ -91,7 +91,7 @@ export const getDiagnosisByAppointment = async (appointmentId: string): Promise<
         Authorization: `Bearer ${token}`,
       },
     });
-    return response.data.diagnosis;
+    return response.data.data;
   } catch (error: any) {
     if (error.response?.status === 404) {
       return null;
@@ -109,7 +109,7 @@ export const getDiagnosesByDoctor = async (doctorId: string): Promise<Diagnosis[
         Authorization: `Bearer ${token}`,
       },
     });
-    return response.data.diagnoses;
+    return response.data.data;
   } catch (error: any) {
     throw new Error(error.response?.data?.message || "Failed to fetch diagnoses");
   }
@@ -124,7 +124,7 @@ export const getDiagnosesByPatient = async (patientId: string): Promise<Diagnosi
         Authorization: `Bearer ${token}`,
       },
     });
-    return response.data.diagnoses;
+    return response.data.data;
   } catch (error: any) {
     throw new Error(error.response?.data?.message || "Failed to fetch diagnoses");
   }
@@ -139,7 +139,7 @@ export const getAllDiagnoses = async (): Promise<Diagnosis[]> => {
         Authorization: `Bearer ${token}`,
       },
     });
-    return response.data.diagnoses;
+    return response.data.data;
   } catch (error: any) {
     throw new Error(error.response?.data?.message || "Failed to fetch diagnoses");
   }
@@ -157,7 +157,7 @@ export const updateDiagnosis = async (
         Authorization: `Bearer ${token}`,
       },
     });
-    return response.data.diagnosis;
+    return response.data.data;
   } catch (error: any) {
     throw new Error(error.response?.data?.message || "Failed to update diagnosis");
   }
@@ -181,7 +181,7 @@ export const getRevenueStats = async (params?: {
         Authorization: `Bearer ${token}`,
       },
     });
-    return response.data.stats;
+    return response.data.data;
   } catch (error: any) {
     throw new Error(error.response?.data?.message || "Failed to fetch revenue stats");
   }

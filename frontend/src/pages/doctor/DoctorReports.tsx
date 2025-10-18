@@ -328,8 +328,8 @@ const DoctorReports: React.FC = () => {
     
     const revenueRows = [
       ['Revenue from Completed Appointments', `LKR ${reportData.estimatedRevenue.toLocaleString()}`],
-      ['Lost Due to Cancellations', `-$${reportData.cancelledAppointments * 50}`],
-      ['Potential if All Completed', `$${reportData.totalAppointments * 50}`],
+      ['Lost Due to Cancellations', `-LKR ${(reportData.cancelledAppointments * 3000).toLocaleString()}`],
+      ['Potential if All Completed', `LKR ${(reportData.totalAppointments * 3000).toLocaleString()}`],
     ];
     
     autoTable(doc, {
@@ -793,13 +793,13 @@ const DoctorReports: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-lg p-6 text-white">
               <p className="text-emerald-100 text-sm mb-2">Total Revenue</p>
-              <p className="text-4xl font-bold">${reportData.estimatedRevenue}</p>
+              <p className="text-4xl font-bold">LKR {reportData.estimatedRevenue.toLocaleString()}</p>
             </div>
             
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
               <p className="text-gray-600 text-sm mb-2">Per Appointment</p>
               <p className="text-3xl font-bold text-gray-900">
-                ${(reportData.estimatedRevenue / Math.max(reportData.completedAppointments, 1)).toFixed(0)}
+                LKR {(reportData.estimatedRevenue / Math.max(reportData.completedAppointments, 1)).toFixed(0)}
               </p>
             </div>
             
@@ -811,7 +811,7 @@ const DoctorReports: React.FC = () => {
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
               <p className="text-gray-600 text-sm mb-2">Potential Revenue</p>
               <p className="text-3xl font-bold text-blue-600">
-                ${(reportData.totalAppointments - reportData.cancelledAppointments) * 50}
+                LKR {((reportData.totalAppointments - reportData.cancelledAppointments) * 3000).toLocaleString()}
               </p>
             </div>
           </div>
@@ -821,19 +821,19 @@ const DoctorReports: React.FC = () => {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-gray-700">Revenue from Completed Appointments</span>
-                <span className="font-bold text-green-600">${reportData.estimatedRevenue}</span>
+                <span className="font-bold text-green-600">LKR {reportData.estimatedRevenue.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-700">Lost Due to Cancellations</span>
-                <span className="font-bold text-red-600">-${reportData.cancelledAppointments * 50}</span>
+                <span className="font-bold text-red-600">-LKR {(reportData.cancelledAppointments * 3000).toLocaleString()}</span>
               </div>
               <div className="border-t border-gray-200 pt-3 mt-3 flex justify-between items-center">
                 <span className="text-gray-900 font-semibold">Potential if All Completed</span>
-                <span className="font-bold text-blue-600">${reportData.totalAppointments * 50}</span>
+                <span className="font-bold text-blue-600">LKR {(reportData.totalAppointments * 3000).toLocaleString()}</span>
               </div>
             </div>
             <p className="text-sm text-gray-600 mt-4 p-3 bg-white rounded-lg">
-              💡 <strong>Insight:</strong> Reducing cancellations by 50% could add ${(reportData.cancelledAppointments * 25).toFixed(0)} to your revenue.
+              💡 <strong>Insight:</strong> Reducing cancellations by 50% could add LKR {((reportData.cancelledAppointments * 3000) / 2).toLocaleString()} to your revenue.
             </p>
           </div>
         </div>
@@ -866,7 +866,7 @@ const DoctorReports: React.FC = () => {
                 <h4 className="font-semibold text-gray-900">Lost Revenue</h4>
                 <BanknotesIcon className="h-6 w-6 text-gray-500" />
               </div>
-              <p className="text-4xl font-bold text-gray-900">${reportData.cancelledAppointments * 50}</p>
+              <p className="text-4xl font-bold text-gray-900">LKR {(reportData.cancelledAppointments * 3000).toLocaleString()}</p>
               <p className="text-sm text-gray-600 mt-2">Due to cancellations</p>
             </div>
           </div>
@@ -970,7 +970,7 @@ const DoctorReports: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-gray-700">Revenue per Day</span>
                   <span className="font-bold text-emerald-600">
-                    ${(reportData.estimatedRevenue / Math.max(1, Math.ceil((new Date().getTime() - getDateRangeFilter().startDate.getTime()) / (1000 * 60 * 60 * 24)))).toFixed(0)}
+                    LKR {(reportData.estimatedRevenue / Math.max(1, Math.ceil((new Date().getTime() - getDateRangeFilter().startDate.getTime()) / (1000 * 60 * 60 * 24)))).toLocaleString()}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">

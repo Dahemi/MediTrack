@@ -125,10 +125,13 @@ const AdminReports: React.FC = () => {
       // Fetch all doctors
       const doctorsResponse = await api.get('/doctors');
       const allDoctors: Doctor[] = doctorsResponse.data.doctors || doctorsResponse.data.data || [];
+      console.log('Fetched doctors:', allDoctors.length);
 
       // Fetch all appointments
       const appointmentsResponse = await api.get('/appointment');
       const allAppointments: Appointment[] = appointmentsResponse.data.appointments || appointmentsResponse.data || [];
+      console.log('Fetched appointments:', allAppointments.length);
+      console.log('Sample appointment:', allAppointments[0]);
 
       // Filter by date range
       const { startDate, endDate } = getDateRangeFilter();
@@ -136,6 +139,8 @@ const AdminReports: React.FC = () => {
         const aptDate = new Date(apt.date);
         return aptDate >= startDate && aptDate <= endDate;
       });
+      
+      console.log(`Filtered appointments (${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}):`, filteredAppointments.length);
 
       await calculateSystemStats(allDoctors, filteredAppointments);
     } catch (error) {
@@ -180,10 +185,22 @@ const AdminReports: React.FC = () => {
     // Calculate doctor performance with real revenue
     const doctorPerformance: DoctorPerformance[] = await Promise.all(
       doctorsList.map(async (doctor) => {
-        const doctorAppointments = appointmentsList.filter(apt => apt.doctorId === doctor._id);
+        console.log(`Processing doctor: ${doctor.name} (${doctor._id})`);
+        
+        // Try both string comparison and toString() comparison
+        const doctorAppointments = appointmentsList.filter(apt => {
+          const aptDoctorId = typeof apt.doctorId === 'string' ? apt.doctorId : String(apt.doctorId || '');
+          const docId = String(doctor._id);
+          return aptDoctorId === docId;
+        });
+        
+        console.log(`  Found ${doctorAppointments.length} appointments for ${doctor.name}`);
+        
         const doctorCompleted = doctorAppointments.filter(apt => apt.status === 'completed').length;
         const doctorCancelled = doctorAppointments.filter(apt => apt.status === 'cancelled').length;
         const doctorPatients = new Set(doctorAppointments.map(apt => apt.patientName)).size;
+        
+        console.log(`  Completed: ${doctorCompleted}, Cancelled: ${doctorCancelled}, Unique Patients: ${doctorPatients}`);
         
         // Get doctor's actual revenue
         let doctorRevenue = 0;
@@ -220,6 +237,8 @@ const AdminReports: React.FC = () => {
     );
 
     const sortedPerformance = doctorPerformance.sort((a, b) => b.totalAppointments - a.totalAppointments);
+
+    console.log('Doctor Performance Data:', sortedPerformance);
 
     setSystemStats({
       totalDoctors,
@@ -665,7 +684,7 @@ const AdminReports: React.FC = () => {
                       <span className="text-sm text-gray-900">{doctor.uniquePatients}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <span className="text-sm font-semibold text-emerald-600">${doctor.revenue}</span>
+                      <span className="text-sm font-semibold text-emerald-600">LKR {doctor.revenue.toLocaleString()}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -747,27 +766,27 @@ const AdminReports: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-lg p-6 text-white">
               <p className="text-emerald-100 text-sm mb-2">Total System Revenue</p>
-              <p className="text-4xl font-bold">${systemStats.systemRevenue}</p>
+              <p className="text-4xl font-bold">LKR {systemStats.systemRevenue.toLocaleString()}</p>
             </div>
             
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
               <p className="text-gray-600 text-sm mb-2">Per Appointment</p>
               <p className="text-3xl font-bold text-gray-900">
-                ${(systemStats.systemRevenue / Math.max(systemStats.completedAppointments, 1)).toFixed(0)}
+                LKR {(systemStats.systemRevenue / Math.max(systemStats.completedAppointments, 1)).toFixed(0)}
               </p>
             </div>
             
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
               <p className="text-gray-600 text-sm mb-2">Per Doctor (Avg)</p>
               <p className="text-3xl font-bold text-blue-600">
-                ${(systemStats.systemRevenue / Math.max(systemStats.totalDoctors, 1)).toFixed(0)}
+                LKR {(systemStats.systemRevenue / Math.max(systemStats.totalDoctors, 1)).toFixed(0)}
               </p>
             </div>
             
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
               <p className="text-gray-600 text-sm mb-2">Lost Revenue</p>
               <p className="text-3xl font-bold text-red-600">
-                ${systemStats.cancelledAppointments * 50}
+                LKR {(systemStats.cancelledAppointments * 3000).toLocaleString()}
               </p>
             </div>
           </div>
@@ -787,7 +806,7 @@ const AdminReports: React.FC = () => {
                         <span className="font-medium text-gray-900">{doctor.doctorName}</span>
                         <span className="text-gray-500">({doctor.specialization})</span>
                       </div>
-                      <span className="font-bold text-emerald-600">${doctor.revenue}</span>
+                      <span className="font-bold text-emerald-600">LKR {doctor.revenue.toLocaleString()}</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
@@ -850,7 +869,7 @@ const AdminReports: React.FC = () => {
                   </div>
                 </div>
                 {(() => {
-                  const busiestDoctor = systemStats.doctorPerformance[0];
+                  const busiestDoctor = [...systemStats.doctorPerformance].sort((a, b) => b.totalAppointments - a.totalAppointments)[0];
                   return busiestDoctor ? (
                     <div>
                       <p className="text-xl font-bold text-purple-600">{busiestDoctor.doctorName}</p>
@@ -888,7 +907,7 @@ const AdminReports: React.FC = () => {
                       <div className="mt-4 space-y-2">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Revenue:</span>
-                          <span className="font-semibold text-emerald-600">${topRevenueDoctor.revenue}</span>
+                          <span className="font-semibold text-emerald-600">LKR {topRevenueDoctor.revenue.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Completed:</span>
