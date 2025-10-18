@@ -137,7 +137,7 @@ const AdminReports: React.FC = () => {
         return aptDate >= startDate && aptDate <= endDate;
       });
 
-      calculateSystemStats(allDoctors, filteredAppointments);
+      await calculateSystemStats(allDoctors, filteredAppointments);
     } catch (error) {
       console.error('Error fetching admin report data:', error);
     } finally {
@@ -145,7 +145,7 @@ const AdminReports: React.FC = () => {
     }
   };
 
-  const calculateSystemStats = (doctorsList: Doctor[], appointmentsList: Appointment[]) => {
+  const calculateSystemStats = async (doctorsList: Doctor[], appointmentsList: Appointment[]) => {
     const totalDoctors = doctorsList.length;
     const totalAppointments = appointmentsList.length;
     const completedAppointments = appointmentsList.filter(apt => apt.status === 'completed').length;
@@ -154,8 +154,21 @@ const AdminReports: React.FC = () => {
     // Calculate unique patients
     const uniquePatients = new Set(appointmentsList.map(apt => apt.patientName)).size;
 
-    // Calculate revenue
-    const systemRevenue = completedAppointments * 50;
+    // Get real revenue from diagnosis API
+    let systemRevenue = 0;
+    try {
+      const { startDate, endDate } = getDateRangeFilter();
+      const { getRevenueStats } = await import('../../services/diagnosis.api');
+      const revenueStats = await getRevenueStats({
+        startDate: format(startDate, 'yyyy-MM-dd'),
+        endDate: format(endDate, 'yyyy-MM-dd'),
+      });
+      systemRevenue = revenueStats.totalRevenue;
+    } catch (error) {
+      console.error('Error fetching system revenue stats:', error);
+      // Fallback to estimated revenue if diagnosis data not available
+      systemRevenue = completedAppointments * 3000; // 1000 registration + ~2000 average doctor fee
+    }
 
     // Calculate rates
     const completionRate = totalAppointments > 0 ? (completedAppointments / totalAppointments) * 100 : 0;
@@ -164,29 +177,49 @@ const AdminReports: React.FC = () => {
     // Calculate average appointments per doctor
     const avgAppointmentsPerDoctor = totalDoctors > 0 ? totalAppointments / totalDoctors : 0;
 
-    // Calculate doctor performance
-    const doctorPerformance: DoctorPerformance[] = doctorsList.map(doctor => {
-      const doctorAppointments = appointmentsList.filter(apt => apt.doctorId === doctor._id);
-      const doctorCompleted = doctorAppointments.filter(apt => apt.status === 'completed').length;
-      const doctorCancelled = doctorAppointments.filter(apt => apt.status === 'cancelled').length;
-      const doctorPatients = new Set(doctorAppointments.map(apt => apt.patientName)).size;
-      const doctorRevenue = doctorCompleted * 50;
-      const doctorCompletionRate = doctorAppointments.length > 0 
-        ? (doctorCompleted / doctorAppointments.length) * 100 
-        : 0;
+    // Calculate doctor performance with real revenue
+    const doctorPerformance: DoctorPerformance[] = await Promise.all(
+      doctorsList.map(async (doctor) => {
+        const doctorAppointments = appointmentsList.filter(apt => apt.doctorId === doctor._id);
+        const doctorCompleted = doctorAppointments.filter(apt => apt.status === 'completed').length;
+        const doctorCancelled = doctorAppointments.filter(apt => apt.status === 'cancelled').length;
+        const doctorPatients = new Set(doctorAppointments.map(apt => apt.patientName)).size;
+        
+        // Get doctor's actual revenue
+        let doctorRevenue = 0;
+        try {
+          const { startDate, endDate } = getDateRangeFilter();
+          const { getRevenueStats } = await import('../../services/diagnosis.api');
+          const revenueStats = await getRevenueStats({
+            doctorId: doctor._id,
+            startDate: format(startDate, 'yyyy-MM-dd'),
+            endDate: format(endDate, 'yyyy-MM-dd'),
+          });
+          doctorRevenue = revenueStats.totalRevenue;
+        } catch (error) {
+          console.error(`Error fetching revenue for doctor ${doctor._id}:`, error);
+          doctorRevenue = doctorCompleted * 3000; // Fallback
+        }
 
-      return {
-        doctorId: doctor._id,
-        doctorName: doctor.fullName || doctor.name,
-        specialization: doctor.specialization || 'N/A',
-        totalAppointments: doctorAppointments.length,
-        completedAppointments: doctorCompleted,
-        cancelledAppointments: doctorCancelled,
-        uniquePatients: doctorPatients,
-        revenue: doctorRevenue,
-        completionRate: doctorCompletionRate,
-      };
-    }).sort((a, b) => b.totalAppointments - a.totalAppointments);
+        const doctorCompletionRate = doctorAppointments.length > 0 
+          ? (doctorCompleted / doctorAppointments.length) * 100 
+          : 0;
+
+        return {
+          doctorId: doctor._id,
+          doctorName: doctor.fullName || doctor.name,
+          specialization: doctor.specialization || 'N/A',
+          totalAppointments: doctorAppointments.length,
+          completedAppointments: doctorCompleted,
+          cancelledAppointments: doctorCancelled,
+          uniquePatients: doctorPatients,
+          revenue: doctorRevenue,
+          completionRate: doctorCompletionRate,
+        };
+      })
+    );
+
+    const sortedPerformance = doctorPerformance.sort((a, b) => b.totalAppointments - a.totalAppointments);
 
     setSystemStats({
       totalDoctors,
@@ -198,7 +231,7 @@ const AdminReports: React.FC = () => {
       avgAppointmentsPerDoctor,
       completionRate,
       cancellationRate,
-      doctorPerformance,
+      doctorPerformance: sortedPerformance,
     });
   };
 
@@ -237,7 +270,7 @@ const AdminReports: React.FC = () => {
       ['Total Appointments', systemStats.totalAppointments.toString()],
       ['Completed Appointments', systemStats.completedAppointments.toString()],
       ['Cancelled Appointments', systemStats.cancelledAppointments.toString()],
-      ['System Revenue', `$${systemStats.systemRevenue}`],
+      ['System Revenue', `LKR ${systemStats.systemRevenue.toLocaleString()}`],
       ['Completion Rate', `${systemStats.completionRate.toFixed(1)}%`],
       ['Cancellation Rate', `${systemStats.cancellationRate.toFixed(1)}%`],
       ['Avg Appointments/Doctor', systemStats.avgAppointmentsPerDoctor.toFixed(1)],
@@ -275,7 +308,7 @@ const AdminReports: React.FC = () => {
       perf.totalAppointments.toString(),
       perf.completedAppointments.toString(),
       perf.uniquePatients.toString(),
-      `$${perf.revenue}`,
+      `LKR ${perf.revenue.toLocaleString()}`,
       `${perf.completionRate.toFixed(1)}%`
     ]);
     
@@ -511,7 +544,7 @@ const AdminReports: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">System Revenue</p>
-                  <p className="text-3xl font-bold text-emerald-600 mt-2">${systemStats.systemRevenue}</p>
+                  <p className="text-3xl font-bold text-emerald-600 mt-2">LKR {systemStats.systemRevenue.toLocaleString()}</p>
                 </div>
                 <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl">
                   <BanknotesIcon className="h-6 w-6 text-white" />
@@ -519,7 +552,7 @@ const AdminReports: React.FC = () => {
               </div>
               <div className="mt-4 flex items-center text-sm">
                 <span className="text-gray-600">
-                  ${(systemStats.systemRevenue / Math.max(systemStats.completedAppointments, 1)).toFixed(0)} per appointment
+                  LKR {(systemStats.systemRevenue / Math.max(systemStats.completedAppointments, 1)).toFixed(0)} per appointment
                 </span>
               </div>
             </div>

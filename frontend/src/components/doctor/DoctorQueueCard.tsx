@@ -6,6 +6,7 @@ import {
 } from '@heroicons/react/24/outline';
 import socketService from '../../services/socket.service';
 import api from '../../services/api';
+import PrescriptionModal from './PrescriptionModal';
 
 interface QueueStatus {
   doctorId: string;
@@ -19,6 +20,7 @@ interface QueueStatus {
 
 interface Appointment {
   _id: string;
+  patientId: string;
   patientName: string;
   patientContact: string;
   patientAddress: string;
@@ -56,6 +58,14 @@ const DoctorQueueCard: React.FC<DoctorQueueCardProps> = ({
   const [pauseReason, setPauseReason] = useState('');
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Prescription Modal State
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
+  const [prescriptionPatient, setPrescriptionPatient] = useState<{
+    appointmentId: string;
+    patientId: string;
+    patientName: string;
+  } | null>(null);
 
   // Current patient in session
   const currentPatient = appointments.find(app => app.status === 'in_session');
@@ -353,13 +363,52 @@ const DoctorQueueCard: React.FC<DoctorQueueCardProps> = ({
                   In Session
                 </div>
                 <p className="text-xs text-gray-600 mb-3 font-medium">Started {currentPatient.time}</p>
-                <button
-                  onClick={() => handleStatusChange(currentPatient._id, 'completed')}
-                  disabled={actionLoading}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
-                >
-                  Complete Session
-                </button>
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Full current patient object:', currentPatient);
+                      console.log('Prescribe button clicked for patient:', {
+                        appointmentId: currentPatient._id,
+                        patientId: currentPatient.patientId,
+                        patientName: currentPatient.patientName,
+                        fullObject: currentPatient
+                      });
+                      
+                      // Get patientId - try different possible field names
+                      const patientId = currentPatient.patientId || 
+                                       (currentPatient as any).patient?._id ||
+                                       (currentPatient as any).patient;
+                      
+                      if (!patientId) {
+                        alert('Error: Cannot find patient ID in appointment data');
+                        console.error('Missing patientId in appointment:', currentPatient);
+                        return;
+                      }
+                      
+                      setPrescriptionPatient({
+                        appointmentId: currentPatient._id,
+                        patientId: patientId,
+                        patientName: currentPatient.patientName,
+                      });
+                      setShowPrescriptionModal(true);
+                    }}
+                    disabled={actionLoading}
+                    className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Prescribe
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleStatusChange(currentPatient._id, 'completed')}
+                    disabled={actionLoading}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Complete Session
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -508,6 +557,25 @@ const DoctorQueueCard: React.FC<DoctorQueueCardProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Prescription Modal */}
+      {showPrescriptionModal && prescriptionPatient && (
+        <PrescriptionModal
+          appointmentId={prescriptionPatient.appointmentId}
+          patientId={prescriptionPatient.patientId}
+          patientName={prescriptionPatient.patientName}
+          doctorId={doctorId}
+          onClose={() => {
+            setShowPrescriptionModal(false);
+            setPrescriptionPatient(null);
+          }}
+          onSuccess={() => {
+            setShowPrescriptionModal(false);
+            setPrescriptionPatient(null);
+            fetchData(); // Refresh the queue data
+          }}
+        />
       )}
     </div>
   );

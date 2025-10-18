@@ -127,7 +127,7 @@ const DoctorReports: React.FC = () => {
       });
       
       setAppointments(filteredAppointments);
-      calculateReportData(filteredAppointments, startDate, endDate);
+      await calculateReportData(filteredAppointments, startDate, endDate);
     } catch (error) {
       console.error('Error fetching report data:', error);
       setAppointments([]);
@@ -136,7 +136,7 @@ const DoctorReports: React.FC = () => {
     }
   };
 
-  const calculateReportData = (appointments: Appointment[], startDate: Date, endDate: Date) => {
+  const calculateReportData = async (appointments: Appointment[], startDate: Date, endDate: Date) => {
     const total = appointments.length;
     const completed = appointments.filter(apt => apt.status === 'completed').length;
     const cancelled = appointments.filter(apt => apt.status === 'cancelled').length;
@@ -167,8 +167,21 @@ const DoctorReports: React.FC = () => {
     const daysDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
     const averageAppointmentsPerDay = total / daysDiff;
     
-    // Revenue (assuming $50 per completed appointment - adjust as needed)
-    const estimatedRevenue = completed * 50;
+    // Get real revenue from diagnosis API
+    let estimatedRevenue = 0;
+    try {
+      const { getRevenueStats } = await import('../../services/diagnosis.api');
+      const revenueStats = await getRevenueStats({
+        doctorId: user?.id,
+        startDate: format(startDate, 'yyyy-MM-dd'),
+        endDate: format(endDate, 'yyyy-MM-dd'),
+      });
+      estimatedRevenue = revenueStats.totalRevenue;
+    } catch (error) {
+      console.error('Error fetching revenue stats:', error);
+      // Fallback to estimated revenue if diagnosis data not available
+      estimatedRevenue = completed * 3000; // 1000 registration + ~2000 average doctor fee
+    }
     
     // Peak day
     const dayFrequency: Record<string, number> = {};
@@ -240,7 +253,7 @@ const DoctorReports: React.FC = () => {
       ['Cancelled Appointments', reportData.cancelledAppointments.toString()],
       ['Total Patients', reportData.totalPatients.toString()],
       ['New Patients', reportData.newPatients.toString()],
-      ['Estimated Revenue', `$${reportData.estimatedRevenue}`],
+      ['Total Revenue', `LKR ${reportData.estimatedRevenue.toLocaleString()}`],
       ['Completion Rate', `${reportData.completionRate.toFixed(1)}%`],
       ['Cancellation Rate', `${reportData.cancellationRate.toFixed(1)}%`],
       ['Avg Appointments/Day', reportData.averageAppointmentsPerDay.toFixed(1)],
@@ -314,7 +327,7 @@ const DoctorReports: React.FC = () => {
     yPosition += 8;
     
     const revenueRows = [
-      ['Revenue from Completed Appointments', `$${reportData.estimatedRevenue}`],
+      ['Revenue from Completed Appointments', `LKR ${reportData.estimatedRevenue.toLocaleString()}`],
       ['Lost Due to Cancellations', `-$${reportData.cancelledAppointments * 50}`],
       ['Potential if All Completed', `$${reportData.totalAppointments * 50}`],
     ];
@@ -608,8 +621,8 @@ const DoctorReports: React.FC = () => {
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Est. Revenue</p>
-                  <p className="text-3xl font-bold text-emerald-600 mt-2">${reportData.estimatedRevenue}</p>
+                  <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                  <p className="text-3xl font-bold text-emerald-600 mt-2">LKR {reportData.estimatedRevenue.toLocaleString()}</p>
                 </div>
                 <div className="p-3 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl">
                   <BanknotesIcon className="h-6 w-6 text-white" />
@@ -617,7 +630,7 @@ const DoctorReports: React.FC = () => {
               </div>
               <div className="mt-4 flex items-center text-sm">
                 <span className="text-gray-600">
-                  ${(reportData.estimatedRevenue / Math.max(reportData.completedAppointments, 1)).toFixed(0)} per appointment
+                  LKR {(reportData.estimatedRevenue / Math.max(reportData.completedAppointments, 1)).toFixed(0)} per appointment
                 </span>
               </div>
             </div>
