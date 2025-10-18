@@ -7,6 +7,7 @@ import AdminUsers from "../../components/admin/AdminUsers";
 import AdminAppointments from "../../components/admin/AdminAppointments";
 import AdminRoute from "../../components/admin/AdminRoute";
 import AdminQueueDashboard from "./AdminQueueDashboard";
+import AdminReports from "./AdminReports";
 
 const AdminDashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -56,6 +57,7 @@ const AdminDashboard: React.FC = () => {
                   <Route path="/users" element={<AdminUsers />} />
                   <Route path="/appointments" element={<AdminAppointments />} />
                   <Route path="/queues" element={<AdminQueueDashboard />} />
+                  <Route path="/reports" element={<AdminReports />} />
                   {/* Add more routes as needed */}
                 </Routes>
               </div>
