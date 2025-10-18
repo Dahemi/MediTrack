@@ -8,6 +8,7 @@ import appointmentRoutes from "./routes/appointment.routes.js";
 import patientRoutes from "./routes/patient.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import queueRoutes, { adminQueueRouter } from "./routes/queue.routes.js";
+import diagnosisRoutes from "./routes/diagnosis.routes.js";
 import { SocketService } from "./services/SocketService.js";
 import { optionalDoctorAuth } from "./middleware/doctor.middleware.js";
 
@@ -22,6 +23,7 @@ SocketService.init(server);
 app.use(cors({
   origin: [
     "http://localhost:5173",
+    "http://localhost:5174",
     "http://localhost:3000",
     process.env.FRONTEND_URL || "http://localhost:5173",
   ],
@@ -44,6 +46,7 @@ app.use("/api/patient", patientRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/appointment", appointmentRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/diagnosis", diagnosisRoutes);
 
 // New queue-related routes (extensions)
 app.use("/api/doctor/queue", optionalDoctorAuth, queueRoutes);
