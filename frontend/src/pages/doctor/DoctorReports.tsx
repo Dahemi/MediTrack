@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../services/api";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
   ChartBarIcon,
   DocumentArrowDownIcon,
@@ -204,221 +206,171 @@ const DoctorReports: React.FC = () => {
   };
 
   const exportToPDF = () => {
-    // Create a new window for printing
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
     const { startDate, endDate } = getDateRangeFilter();
+    const doc = new jsPDF();
     
-    // Generate HTML content for PDF
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Doctor Report - ${format(new Date(), 'yyyy-MM-dd')}</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              padding: 40px;
-              color: #333;
-            }
-            .header {
-              text-align: center;
-              margin-bottom: 30px;
-              border-bottom: 3px solid #2563eb;
-              padding-bottom: 20px;
-            }
-            .header h1 {
-              color: #2563eb;
-              margin: 0;
-              font-size: 28px;
-            }
-            .header p {
-              color: #666;
-              margin: 5px 0;
-            }
-            .metrics {
-              display: grid;
-              grid-template-columns: repeat(4, 1fr);
-              gap: 15px;
-              margin: 30px 0;
-            }
-            .metric-card {
-              border: 1px solid #e5e7eb;
-              border-radius: 8px;
-              padding: 15px;
-              text-align: center;
-            }
-            .metric-card .label {
-              font-size: 12px;
-              color: #666;
-              margin-bottom: 5px;
-            }
-            .metric-card .value {
-              font-size: 24px;
-              font-weight: bold;
-              color: #1f2937;
-            }
-            .metric-card.green .value { color: #10b981; }
-            .metric-card.blue .value { color: #3b82f6; }
-            .metric-card.purple .value { color: #8b5cf6; }
-            .metric-card.emerald .value { color: #059669; }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 20px;
-            }
-            th {
-              background-color: #f3f4f6;
-              padding: 12px;
-              text-align: left;
-              border-bottom: 2px solid #d1d5db;
-              font-weight: 600;
-            }
-            td {
-              padding: 10px 12px;
-              border-bottom: 1px solid #e5e7eb;
-            }
-            .status {
-              display: inline-block;
-              padding: 4px 8px;
-              border-radius: 4px;
-              font-size: 11px;
-              font-weight: 600;
-            }
-            .status.completed { background-color: #d1fae5; color: #065f46; }
-            .status.cancelled { background-color: #fee2e2; color: #991b1b; }
-            .status.booked { background-color: #dbeafe; color: #1e40af; }
-            .status.in_session { background-color: #fef3c7; color: #92400e; }
-            .section {
-              margin-top: 30px;
-              page-break-inside: avoid;
-            }
-            .section h2 {
-              color: #1f2937;
-              border-bottom: 2px solid #e5e7eb;
-              padding-bottom: 10px;
-              margin-bottom: 15px;
-            }
-            .insights {
-              background-color: #f9fafb;
-              border-left: 4px solid #3b82f6;
-              padding: 15px;
-              margin: 20px 0;
-            }
-            @media print {
-              body { padding: 20px; }
-              .metrics { grid-template-columns: repeat(2, 1fr); }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>📊 Medical Practice Report</h1>
-            <p><strong>Doctor:</strong> ${user?.name || 'N/A'}</p>
-            <p><strong>Period:</strong> ${format(startDate, 'MMM dd, yyyy')} - ${format(endDate, 'MMM dd, yyyy')}</p>
-            <p><strong>Generated:</strong> ${format(new Date(), 'MMM dd, yyyy HH:mm')}</p>
-          </div>
-
-          <div class="section">
-            <h2>Key Performance Metrics</h2>
-            <div class="metrics">
-              <div class="metric-card">
-                <div class="label">Total Appointments</div>
-                <div class="value">${reportData.totalAppointments}</div>
-              </div>
-              <div class="metric-card green">
-                <div class="label">Completed</div>
-                <div class="value">${reportData.completedAppointments}</div>
-              </div>
-              <div class="metric-card purple">
-                <div class="label">Total Patients</div>
-                <div class="value">${reportData.totalPatients}</div>
-              </div>
-              <div class="metric-card emerald">
-                <div class="label">Est. Revenue</div>
-                <div class="value">$${reportData.estimatedRevenue}</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="insights">
-            <strong>Performance Summary:</strong><br>
-            • Completion Rate: ${reportData.completionRate.toFixed(1)}%<br>
-            • Cancellation Rate: ${reportData.cancellationRate.toFixed(1)}%<br>
-            • Average Appointments/Day: ${reportData.averageAppointmentsPerDay.toFixed(1)}<br>
-            • Peak Day: ${reportData.peakDay} | Peak Hour: ${reportData.peakHour}<br>
-            • New Patients: ${reportData.newPatients} | Return Rate: ${reportData.totalPatients > 0 ? ((1 - reportData.newPatients / reportData.totalPatients) * 100).toFixed(0) : '0'}%
-          </div>
-
-          <div class="section">
-            <h2>Appointment Details</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Time</th>
-                  <th>Patient Name</th>
-                  <th>Queue #</th>
-                  <th>Status</th>
-                  <th>Contact</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${appointments.map(apt => `
-                  <tr>
-                    <td>${format(new Date(apt.date), 'MMM dd, yyyy')}</td>
-                    <td>${apt.time}</td>
-                    <td>${apt.patientName}</td>
-                    <td>${apt.queueNumber}</td>
-                    <td><span class="status ${apt.status}">${apt.status.replace('_', ' ')}</span></td>
-                    <td>${apt.patientContact || 'N/A'}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-
-          <div class="section">
-            <h2>Revenue Analysis</h2>
-            <table>
-              <tr>
-                <td><strong>Revenue from Completed Appointments</strong></td>
-                <td style="text-align: right; color: #10b981; font-weight: bold;">$${reportData.estimatedRevenue}</td>
-              </tr>
-              <tr>
-                <td><strong>Lost Due to Cancellations</strong></td>
-                <td style="text-align: right; color: #ef4444; font-weight: bold;">-$${reportData.cancelledAppointments * 50}</td>
-              </tr>
-              <tr style="border-top: 2px solid #d1d5db;">
-                <td><strong>Potential if All Completed</strong></td>
-                <td style="text-align: right; color: #3b82f6; font-weight: bold;">$${reportData.totalAppointments * 50}</td>
-              </tr>
-            </table>
-          </div>
-
-          <div class="insights" style="margin-top: 30px;">
-            <strong>📈 Recommendations:</strong><br>
-            ${reportData.cancellationRate > 15 ? '• Consider implementing reminder systems to reduce cancellations<br>' : ''}
-            ${reportData.completionRate < 85 ? '• Focus on improving appointment completion rates<br>' : ''}
-            ${reportData.newPatients < reportData.totalPatients * 0.3 ? '• Increase patient acquisition efforts through referrals and marketing<br>' : ''}
-            • Continue maintaining excellent patient care and service quality
-          </div>
-
-          <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(function() {
-                window.close();
-              }, 100);
-            }
-          </script>
-        </body>
-      </html>
-    `;
-
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+    // Add title
+    doc.setFontSize(20);
+    doc.setTextColor(37, 99, 235); // Blue color
+    doc.text('Medical Practice Report', 105, 20, { align: 'center' });
+    
+    // Add subtitle info
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Doctor: ${user?.name || 'N/A'}`, 105, 30, { align: 'center' });
+    doc.text(`Period: ${format(startDate, 'MMM dd, yyyy')} - ${format(endDate, 'MMM dd, yyyy')}`, 105, 36, { align: 'center' });
+    doc.text(`Generated: ${format(new Date(), 'MMM dd, yyyy HH:mm')}`, 105, 42, { align: 'center' });
+    
+    // Add horizontal line
+    doc.setDrawColor(37, 99, 235);
+    doc.setLineWidth(0.5);
+    doc.line(20, 46, 190, 46);
+    
+    let yPosition = 55;
+    
+    // Key Metrics Section
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Key Performance Metrics', 20, yPosition);
+    yPosition += 8;
+    
+    const metrics = [
+      ['Total Appointments', reportData.totalAppointments.toString()],
+      ['Completed Appointments', reportData.completedAppointments.toString()],
+      ['Cancelled Appointments', reportData.cancelledAppointments.toString()],
+      ['Total Patients', reportData.totalPatients.toString()],
+      ['New Patients', reportData.newPatients.toString()],
+      ['Estimated Revenue', `$${reportData.estimatedRevenue}`],
+      ['Completion Rate', `${reportData.completionRate.toFixed(1)}%`],
+      ['Cancellation Rate', `${reportData.cancellationRate.toFixed(1)}%`],
+      ['Avg Appointments/Day', reportData.averageAppointmentsPerDay.toFixed(1)],
+      ['Peak Day', reportData.peakDay],
+      ['Peak Hour', reportData.peakHour],
+    ];
+    
+    autoTable(doc, {
+      startY: yPosition,
+      head: [['Metric', 'Value']],
+      body: metrics,
+      theme: 'grid',
+      headStyles: { fillColor: [37, 99, 235], textColor: 255 },
+      styles: { fontSize: 9 },
+      columnStyles: {
+        0: { cellWidth: 100 },
+        1: { cellWidth: 70, halign: 'right', fontStyle: 'bold' }
+      }
+    });
+    
+    yPosition = (doc as any).lastAutoTable.finalY + 15;
+    
+    // Check if we need a new page
+    if (yPosition > 250) {
+      doc.addPage();
+      yPosition = 20;
+    }
+    
+    // Appointment Details Section
+    doc.setFontSize(14);
+    doc.text('Appointment Details', 20, yPosition);
+    yPosition += 8;
+    
+    const appointmentRows = appointments.slice(0, 100).map(apt => [
+      format(new Date(apt.date), 'MMM dd, yyyy'),
+      apt.time,
+      apt.patientName,
+      apt.queueNumber.toString(),
+      apt.status.replace('_', ' '),
+      apt.patientContact || 'N/A'
+    ]);
+    
+    autoTable(doc, {
+      startY: yPosition,
+      head: [['Date', 'Time', 'Patient', 'Queue #', 'Status', 'Contact']],
+      body: appointmentRows,
+      theme: 'striped',
+      headStyles: { fillColor: [37, 99, 235], textColor: 255 },
+      styles: { fontSize: 8 },
+      columnStyles: {
+        0: { cellWidth: 28 },
+        1: { cellWidth: 20 },
+        2: { cellWidth: 45 },
+        3: { cellWidth: 18, halign: 'center' },
+        4: { cellWidth: 28 },
+        5: { cellWidth: 30 }
+      }
+    });
+    
+    yPosition = (doc as any).lastAutoTable.finalY + 15;
+    
+    // Check if we need a new page
+    if (yPosition > 250) {
+      doc.addPage();
+      yPosition = 20;
+    }
+    
+    // Revenue Analysis Section
+    doc.setFontSize(14);
+    doc.text('Revenue Analysis', 20, yPosition);
+    yPosition += 8;
+    
+    const revenueRows = [
+      ['Revenue from Completed Appointments', `$${reportData.estimatedRevenue}`],
+      ['Lost Due to Cancellations', `-$${reportData.cancelledAppointments * 50}`],
+      ['Potential if All Completed', `$${reportData.totalAppointments * 50}`],
+    ];
+    
+    autoTable(doc, {
+      startY: yPosition,
+      body: revenueRows,
+      theme: 'plain',
+      styles: { fontSize: 10 },
+      columnStyles: {
+        0: { cellWidth: 120, fontStyle: 'bold' },
+        1: { cellWidth: 50, halign: 'right', fontStyle: 'bold' }
+      }
+    });
+    
+    yPosition = (doc as any).lastAutoTable.finalY + 15;
+    
+    // Check if we need a new page
+    if (yPosition > 250) {
+      doc.addPage();
+      yPosition = 20;
+    }
+    
+    // Recommendations Section
+    doc.setFontSize(12);
+    doc.setTextColor(37, 99, 235);
+    doc.text('Recommendations', 20, yPosition);
+    yPosition += 8;
+    
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+    
+    const recommendations: string[] = [];
+    if (reportData.cancellationRate > 15) {
+      recommendations.push('• Consider implementing reminder systems to reduce cancellations');
+    }
+    if (reportData.completionRate < 85) {
+      recommendations.push('• Focus on improving appointment completion rates');
+    }
+    if (reportData.newPatients < reportData.totalPatients * 0.3) {
+      recommendations.push('• Increase patient acquisition through referrals and marketing');
+    }
+    recommendations.push('• Continue maintaining excellent patient care and service quality');
+    
+    recommendations.forEach((rec) => {
+      if (yPosition > 280) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      doc.text(rec, 25, yPosition);
+      yPosition += 6;
+    });
+    
+    // Save the PDF with automatic filename
+    const fileName = `Medical-Report-${user?.name?.replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+    doc.save(fileName);
   };
 
   const renderTrendChart = () => {
