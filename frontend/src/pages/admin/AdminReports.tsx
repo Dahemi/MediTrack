@@ -3,6 +3,7 @@ import api from "../../services/api";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useAdminAuth } from "../../context/AdminAuthContext";
 import {
   ChartBarIcon,
   DocumentArrowDownIcon,
@@ -63,6 +64,7 @@ type ReportType = 'overview' | 'doctors' | 'patients' | 'revenue' | 'system' | '
 type DateRange = 'week' | 'month' | 'quarter' | 'year' | 'custom';
 
 const AdminReports: React.FC = () => {
+  const { admin } = useAdminAuth();
   const [activeReport, setActiveReport] = useState<ReportType>('overview');
   const [dateRange, setDateRange] = useState<DateRange>('month');
   const [customStartDate, setCustomStartDate] = useState('');
@@ -266,6 +268,143 @@ const AdminReports: React.FC = () => {
     });
   };
 
+  const exportRevenueReport = () => {
+    const { startDate, endDate } = getDateRangeFilter();
+    const doc = new jsPDF();
+    
+    // Add title
+    doc.setFontSize(22);
+    doc.setTextColor(16, 185, 129); // Emerald color
+    doc.text('Revenue Analysis Report', 105, 20, { align: 'center' });
+    
+    // Add subtitle
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`MediTrack Healthcare Management System`, 105, 30, { align: 'center' });
+    doc.text(`Period: ${format(startDate, 'MMM dd, yyyy')} - ${format(endDate, 'MMM dd, yyyy')}`, 105, 36, { align: 'center' });
+    doc.text(`Generated: ${format(new Date(), 'MMM dd, yyyy HH:mm')}`, 105, 42, { align: 'center' });
+    
+    // Add decorative line
+    doc.setDrawColor(16, 185, 129);
+    doc.setLineWidth(0.5);
+    doc.line(20, 46, 190, 46);
+    
+    let yPosition = 55;
+    
+    // Revenue Summary Section
+    doc.setFontSize(16);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Revenue Summary', 20, yPosition);
+    yPosition += 10;
+    
+    const revenueMetrics = [
+      ['Total System Revenue', `LKR ${systemStats.systemRevenue.toLocaleString()}`],
+      ['Revenue Per Appointment', `LKR ${(systemStats.systemRevenue / Math.max(systemStats.completedAppointments, 1)).toFixed(0)}`],
+      ['Revenue Per Doctor (Avg)', `LKR ${(systemStats.systemRevenue / Math.max(systemStats.totalDoctors, 1)).toFixed(0)}`],
+      ['Lost Due to Cancellations', `LKR ${(systemStats.cancelledAppointments * 3000).toLocaleString()}`],
+      ['Potential Revenue', `LKR ${((systemStats.totalAppointments - systemStats.cancelledAppointments) * 3000).toLocaleString()}`],
+    ];
+    
+    autoTable(doc, {
+      startY: yPosition,
+      head: [['Metric', 'Amount (LKR)']],
+      body: revenueMetrics,
+      theme: 'grid',
+      headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 11, cellPadding: 5 },
+      columnStyles: {
+        0: { cellWidth: 120, fontStyle: 'bold' },
+        1: { cellWidth: 60, halign: 'right', textColor: [16, 185, 129], fontStyle: 'bold' }
+      }
+    });
+    
+    yPosition = (doc as any).lastAutoTable.finalY + 15;
+    
+    // Doctor Revenue Breakdown
+    doc.setFontSize(16);
+    doc.text('Revenue by Doctor', 20, yPosition);
+    yPosition += 8;
+    
+    const doctorRevenueRows = systemStats.doctorPerformance.map((perf, index) => [
+      `#${index + 1}`,
+      perf.doctorName,
+      perf.specialization,
+      perf.completedAppointments.toString(),
+      `LKR ${perf.revenue.toLocaleString()}`,
+      `${((perf.revenue / Math.max(systemStats.systemRevenue, 1)) * 100).toFixed(1)}%`
+    ]);
+    
+    autoTable(doc, {
+      startY: yPosition,
+      head: [['Rank', 'Doctor Name', 'Specialization', 'Completed', 'Revenue', '% of Total']],
+      body: doctorRevenueRows,
+      theme: 'striped',
+      headStyles: { fillColor: [16, 185, 129], textColor: 255 },
+      styles: { fontSize: 9 },
+      columnStyles: {
+        0: { cellWidth: 15, halign: 'center' },
+        1: { cellWidth: 45 },
+        2: { cellWidth: 35 },
+        3: { cellWidth: 25, halign: 'center' },
+        4: { cellWidth: 35, halign: 'right', textColor: [16, 185, 129], fontStyle: 'bold' },
+        5: { cellWidth: 25, halign: 'center' }
+      }
+    });
+    
+    yPosition = (doc as any).lastAutoTable.finalY + 15;
+    
+    // Check if we need a new page
+    if (yPosition > 250) {
+      doc.addPage();
+      yPosition = 20;
+    }
+    
+    // Revenue Insights
+    doc.setFontSize(14);
+    doc.setTextColor(16, 185, 129);
+    doc.text('Key Insights', 20, yPosition);
+    yPosition += 8;
+    
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    
+    const insights = [
+      `Total revenue generated: LKR ${systemStats.systemRevenue.toLocaleString()}`,
+      `Average revenue per completed appointment: LKR ${(systemStats.systemRevenue / Math.max(systemStats.completedAppointments, 1)).toFixed(0)}`,
+      `${systemStats.totalDoctors} active doctors contributing to system revenue`,
+      `Top earning doctor: ${systemStats.doctorPerformance[0]?.doctorName || 'N/A'} (LKR ${systemStats.doctorPerformance[0]?.revenue.toLocaleString() || '0'})`,
+      `Lost revenue due to ${systemStats.cancelledAppointments} cancellations: LKR ${(systemStats.cancelledAppointments * 3000).toLocaleString()}`,
+    ];
+    
+    insights.forEach((insight) => {
+      if (yPosition > 280) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      // Add bullet point
+      doc.setFontSize(12);
+      doc.text('\u2022', 22, yPosition);
+      doc.setFontSize(10);
+      doc.text(insight, 28, yPosition);
+      yPosition += 7;
+    });
+    
+    // Add footer
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Page ${i} of ${pageCount}`, 105, 282, { align: 'center' });
+      doc.text('MediTrack Revenue Report - Confidential', 105, 287, { align: 'center' });
+      doc.text(`Generated by: ${admin?.fullName || 'System Admin'}`, 105, 292, { align: 'center' });
+    }
+    
+    // Save the PDF
+    const fileName = `Revenue-Report-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`;
+    doc.save(fileName);
+  };
+
   const exportToPDF = () => {
     const { startDate, endDate } = getDateRangeFilter();
     const doc = new jsPDF();
@@ -400,6 +539,17 @@ const AdminReports: React.FC = () => {
       doc.text(insight, 25, yPosition);
       yPosition += 6;
     });
+    
+    // Add footer
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Page ${i} of ${pageCount}`, 105, 282, { align: 'center' });
+      doc.text('MediTrack System Report - Confidential', 105, 287, { align: 'center' });
+      doc.text(`Generated by: ${admin?.fullName || 'System Admin'}`, 105, 292, { align: 'center' });
+    }
     
     // Save the PDF
     const fileName = `Admin-System-Report-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
@@ -777,6 +927,17 @@ const AdminReports: React.FC = () => {
       {/* Revenue Analysis Report */}
       {activeReport === 'revenue' && (
         <div className="space-y-6">
+          {/* Revenue Export Button */}
+          <div className="flex justify-end">
+            <button
+              onClick={exportRevenueReport}
+              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all shadow-md hover:shadow-lg font-medium"
+            >
+              <DocumentArrowDownIcon className="h-5 w-5" />
+              Download Revenue Report
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-lg p-6 text-white">
               <p className="text-emerald-100 text-sm mb-2">Total System Revenue</p>

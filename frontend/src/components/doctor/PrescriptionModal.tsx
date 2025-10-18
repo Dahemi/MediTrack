@@ -48,9 +48,26 @@ const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
     dosage: '',
     frequency: '',
     duration: '',
-    quantity: 1,
+    quantity: 0,
     price: 0,
   });
+
+  // Auto-calculate quantity based on frequency and duration
+  const calculateQuantity = (frequency: string, duration: string): number => {
+    // Extract numbers from frequency (e.g., "3x daily" -> 3, "2 times" -> 2)
+    const freqMatch = frequency.match(/(\d+)/);
+    const freqNum = freqMatch ? parseInt(freqMatch[1]) : 1;
+    
+    // Extract numbers from duration (e.g., "7 days" -> 7, "2 weeks" -> 14)
+    const durMatch = duration.match(/(\d+)/);
+    const durNum = durMatch ? parseInt(durMatch[1]) : 1;
+    
+    // Check if duration is in weeks
+    const isWeeks = duration.toLowerCase().includes('week');
+    const days = isWeeks ? durNum * 7 : durNum;
+    
+    return freqNum * days;
+  };
 
   const addDrug = () => {
     if (currentDrug.name && currentDrug.dosage && currentDrug.price > 0) {
@@ -64,7 +81,7 @@ const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
         dosage: '',
         frequency: '',
         duration: '',
-        quantity: 1,
+        quantity: 0,
         price: 0,
       });
     }
@@ -122,7 +139,6 @@ const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
           doctorFee: 2000,
         });
         
-        alert('Prescription saved successfully!');
         onSuccess();
       } catch (error: any) {
         console.error('Failed to create diagnosis:', error);
@@ -138,7 +154,7 @@ const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       {/* Background overlay */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/30 backdrop-blur-sm"
         onClick={onClose}
       />
 
@@ -146,14 +162,14 @@ const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
       <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white shadow-2xl rounded-2xl z-10">
           {/* Header */}
           <div className="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-start justify-between">
+              <div className="text-left">
                 <h3 className="text-2xl font-bold text-white">Prescribe Medicine</h3>
                 <p className="text-blue-100 text-sm mt-1">Patient: {patientName}</p>
               </div>
               <button
                 onClick={onClose}
-                className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
+                className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors flex-shrink-0"
               >
                 <XMarkIcon className="w-6 h-6" />
               </button>
@@ -230,52 +246,121 @@ const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
                   Add Medication
                 </h4>
                 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <input
-                    type="text"
-                    value={currentDrug.name}
-                    onChange={(e) => setCurrentDrug({ ...currentDrug, name: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="Drug name"
-                  />
-                  <input
-                    type="text"
-                    value={currentDrug.dosage}
-                    onChange={(e) => setCurrentDrug({ ...currentDrug, dosage: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="Dosage (e.g., 500mg)"
-                  />
-                  <input
-                    type="text"
-                    value={currentDrug.frequency}
-                    onChange={(e) => setCurrentDrug({ ...currentDrug, frequency: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="Frequency (e.g., 3x daily)"
-                  />
-                  <input
-                    type="text"
-                    value={currentDrug.duration}
-                    onChange={(e) => setCurrentDrug({ ...currentDrug, duration: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="Duration (e.g., 7 days)"
-                  />
-                  <input
-                    type="number"
-                    value={currentDrug.quantity}
-                    onChange={(e) => setCurrentDrug({ ...currentDrug, quantity: Number(e.target.value) })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="Quantity"
-                    min="1"
-                  />
-                  <input
-                    type="number"
-                    value={currentDrug.price}
-                    onChange={(e) => setCurrentDrug({ ...currentDrug, price: Number(e.target.value) })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="Price (LKR)"
-                    min="0"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Drug Name */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Drug Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={currentDrug.name}
+                      onChange={(e) => setCurrentDrug({ ...currentDrug, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., Paracetamol"
+                    />
+                  </div>
+
+                  {/* Dosage */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Dosage <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={currentDrug.dosage}
+                      onChange={(e) => setCurrentDrug({ ...currentDrug, dosage: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., 500mg"
+                    />
+                  </div>
+
+                  {/* Frequency */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Frequency <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={currentDrug.frequency}
+                      onChange={(e) => {
+                        const newFreq = e.target.value;
+                        setCurrentDrug({ 
+                          ...currentDrug, 
+                          frequency: newFreq,
+                          quantity: calculateQuantity(newFreq, currentDrug.duration)
+                        });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., 3x daily"
+                    />
+                  </div>
+
+                  {/* Duration */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Duration <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={currentDrug.duration}
+                      onChange={(e) => {
+                        const newDur = e.target.value;
+                        setCurrentDrug({ 
+                          ...currentDrug, 
+                          duration: newDur,
+                          quantity: calculateQuantity(currentDrug.frequency, newDur)
+                        });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., 7 days"
+                    />
+                  </div>
+
+                  {/* Quantity (Auto-calculated) */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Quantity (Auto-calculated)
+                    </label>
+                    <input
+                      type="number"
+                      value={currentDrug.quantity || ''}
+                      readOnly
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+                      placeholder="Auto-calculated"
+                      min="1"
+                    />
+                  </div>
+
+                  {/* Rate per Unit */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Rate per Unit (LKR) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={currentDrug.price || ''}
+                      onChange={(e) => setCurrentDrug({ ...currentDrug, price: Number(e.target.value) })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g., 15.00"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
                 </div>
+
+                {/* Total Drug Cost Preview */}
+                {currentDrug.quantity > 0 && currentDrug.price > 0 && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-sm text-gray-700">
+                      <span className="font-medium">Total Cost:</span>{' '}
+                      {currentDrug.quantity} units × LKR {currentDrug.price.toFixed(2)} = {' '}
+                      <span className="font-bold text-blue-600">
+                        LKR {(currentDrug.quantity * currentDrug.price).toFixed(2)}
+                      </span>
+                    </p>
+                  </div>
+                )}
 
                 <button
                   type="button"
