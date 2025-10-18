@@ -187,11 +187,17 @@ const AdminReports: React.FC = () => {
       doctorsList.map(async (doctor) => {
         console.log(`Processing doctor: ${doctor.name} (${doctor._id})`);
         
-        // Try both string comparison and toString() comparison
+        // Handle both populated and non-populated doctorId
         const doctorAppointments = appointmentsList.filter(apt => {
-          const aptDoctorId = typeof apt.doctorId === 'string' ? apt.doctorId : String(apt.doctorId || '');
+          // If doctorId is populated (an object with _id), extract the _id
+          const aptDoctorId = typeof apt.doctorId === 'object' && apt.doctorId !== null
+            ? (apt.doctorId as any)._id 
+            : apt.doctorId;
+          
           const docId = String(doctor._id);
-          return aptDoctorId === docId;
+          const aptDocIdStr = String(aptDoctorId);
+          
+          return aptDocIdStr === docId;
         });
         
         console.log(`  Found ${doctorAppointments.length} appointments for ${doctor.name}`);
