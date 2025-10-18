@@ -221,9 +221,17 @@ export const getRevenueStats = async (req: Request, res: Response) => {
 
     // Filter by date range if provided
     if (startDate && endDate) {
+      // Set start date to beginning of day (00:00:00)
+      const start = new Date(startDate as string);
+      start.setHours(0, 0, 0, 0);
+      
+      // Set end date to end of day (23:59:59.999)
+      const end = new Date(endDate as string);
+      end.setHours(23, 59, 59, 999);
+      
       query.prescribedAt = {
-        $gte: new Date(startDate as string),
-        $lte: new Date(endDate as string),
+        $gte: start,
+        $lte: end,
       };
     }
 

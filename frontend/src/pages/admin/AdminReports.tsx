@@ -163,16 +163,20 @@ const AdminReports: React.FC = () => {
     let systemRevenue = 0;
     try {
       const { startDate, endDate } = getDateRangeFilter();
+      console.log(`Fetching revenue for date range: ${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`);
       const { getRevenueStats } = await import('../../services/diagnosis.api');
       const revenueStats = await getRevenueStats({
         startDate: format(startDate, 'yyyy-MM-dd'),
         endDate: format(endDate, 'yyyy-MM-dd'),
       });
+      console.log('Revenue stats received:', revenueStats);
       systemRevenue = revenueStats.totalRevenue;
+      console.log('System revenue:', systemRevenue);
     } catch (error) {
       console.error('Error fetching system revenue stats:', error);
       // Fallback to estimated revenue if diagnosis data not available
       systemRevenue = completedAppointments * 3000; // 1000 registration + ~2000 average doctor fee
+      console.log('Using fallback revenue:', systemRevenue);
     }
 
     // Calculate rates
@@ -219,9 +223,11 @@ const AdminReports: React.FC = () => {
             endDate: format(endDate, 'yyyy-MM-dd'),
           });
           doctorRevenue = revenueStats.totalRevenue;
+          console.log(`  Doctor revenue: LKR ${doctorRevenue}`);
         } catch (error) {
           console.error(`Error fetching revenue for doctor ${doctor._id}:`, error);
           doctorRevenue = doctorCompleted * 3000; // Fallback
+          console.log(`  Using fallback doctor revenue: LKR ${doctorRevenue}`);
         }
 
         const doctorCompletionRate = doctorAppointments.length > 0 
@@ -668,7 +674,7 @@ const AdminReports: React.FC = () => {
                       <div className="flex items-center space-x-3">
                         <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
                           <span className="text-blue-600 font-medium text-sm">
-                            {doctor.doctorName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                            {doctor.doctorName.charAt(0).toUpperCase()}
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">

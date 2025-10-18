@@ -170,17 +170,21 @@ const DoctorReports: React.FC = () => {
     // Get real revenue from diagnosis API
     let estimatedRevenue = 0;
     try {
+      console.log(`Doctor fetching revenue for date range: ${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`);
       const { getRevenueStats } = await import('../../services/diagnosis.api');
       const revenueStats = await getRevenueStats({
         doctorId: user?.id,
         startDate: format(startDate, 'yyyy-MM-dd'),
         endDate: format(endDate, 'yyyy-MM-dd'),
       });
+      console.log('Doctor revenue stats received:', revenueStats);
       estimatedRevenue = revenueStats.totalRevenue;
+      console.log('Doctor estimated revenue:', estimatedRevenue);
     } catch (error) {
       console.error('Error fetching revenue stats:', error);
       // Fallback to estimated revenue if diagnosis data not available
       estimatedRevenue = completed * 3000; // 1000 registration + ~2000 average doctor fee
+      console.log('Using fallback doctor revenue:', estimatedRevenue);
     }
     
     // Peak day
@@ -708,16 +712,16 @@ const DoctorReports: React.FC = () => {
               appointments.slice(0, 50).map((apt) => (
                 <div key={apt._id} className="p-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                         <span className="text-blue-600 font-medium text-sm">{apt.queueNumber}</span>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{apt.patientName}</p>
-                        <p className="text-sm text-gray-500">{format(new Date(apt.date), 'MMM dd, yyyy')} at {apt.time}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 text-left">{apt.patientName}</p>
+                        <p className="text-sm text-gray-500 text-left">{format(new Date(apt.date), 'MMM dd, yyyy')} at {apt.time}</p>
                       </div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0 ml-4 ${
                       apt.status === 'completed' ? 'bg-green-100 text-green-800' :
                       apt.status === 'cancelled' ? 'bg-red-100 text-red-800' :
                       apt.status === 'in_session' ? 'bg-blue-100 text-blue-800' :
