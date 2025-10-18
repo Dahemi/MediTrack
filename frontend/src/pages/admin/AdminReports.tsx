@@ -665,19 +665,21 @@ const AdminReports: React.FC = () => {
                 {systemStats.doctorPerformance.map((doctor, index) => (
                   <tr key={doctor.doctorId} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
+                      <div className="flex items-center space-x-3">
                         <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
                           <span className="text-blue-600 font-medium text-sm">
                             {doctor.doctorName.split(' ').map(n => n[0]).join('').toUpperCase()}
                           </span>
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{doctor.doctorName}</div>
-                          <div className="text-xs text-gray-500">Rank #{index + 1}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-sm font-medium text-gray-900">{doctor.doctorName}</span>
+                            <span className="text-xs text-gray-500 whitespace-nowrap">Rank #{index + 1}</span>
+                          </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap text-left">
                       <span className="text-sm text-gray-900">{doctor.specialization}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
