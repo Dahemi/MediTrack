@@ -1,27 +1,35 @@
-import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
-import authRoutes from "./routes/authRoutes.js";
+import express from "express";
+import { createServer } from "http";
+import doctorRoutes from "./routes/doctor.routes.js";
+import appointmentRoutes from "./routes/appointment.routes.js";
+import patientRoutes from "./routes/patient.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
+import queueRoutes, { adminQueueRouter } from "./routes/queue.routes.js";
+import diagnosisRoutes from "./routes/diagnosis.routes.js";
+import { SocketService } from "./services/SocketService.js";
+import { optionalDoctorAuth } from "./middleware/doctor.middleware.js";
 
 dotenv.config();
 
 const app = express();
+const server = createServer(app);
 
-// CORS middleware
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:3000",
-      process.env.FRONTEND_URL || "http://localhost:5173",
-    ],
-    credentials: true,
-  })
-);
+// Initialize Socket.io
+SocketService.init(server);
 
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:3000",
+    process.env.FRONTEND_URL || "http://localhost:5173",
+  ],
+  credentials: true,
+}));
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 const PORT = process.env.PORT || 5000;
 const MONGO_URI =
@@ -34,11 +42,45 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Routes
-app.use("/api/auth", authRoutes);
+app.use("/api/patient", patientRoutes);
+app.use("/api/doctors", doctorRoutes);
+app.use("/api/appointment", appointmentRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/diagnosis", diagnosisRoutes);
 
-// Basic API endpoint
+// New queue-related routes (extensions)
+app.use("/api/doctor/queue", optionalDoctorAuth, queueRoutes);
+app.use("/api/admin", adminQueueRouter);
+
+// Enhanced health check with socket info
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", message: "Backend is running!" });
+  const socketStats = {
+    connected: SocketService.getConnectedClientsCount(),
+    doctors: SocketService.getClientsByType("doctor"),
+    patients: SocketService.getClientsByType("patient"),
+    admins: SocketService.getClientsByType("admin"),
+  };
+
+  res.json({ 
+    status: "ok", 
+    message: "Backend with queue system is running!",
+    sockets: socketStats,
+  });
+});
+
+// Socket.io status endpoint
+app.get("/api/socket/status", (_req, res) => {
+  res.json({
+    success: true,
+    data: {
+      connected: SocketService.getConnectedClientsCount(),
+      byType: {
+        doctors: SocketService.getClientsByType("doctor"),
+        patients: SocketService.getClientsByType("patient"),
+        admins: SocketService.getClientsByType("admin"),
+      },
+    },
+  });
 });
 
 // 404 handler
@@ -49,23 +91,7 @@ app.use("*", (_req, res) => {
   });
 });
 
-// Global error handler
-app.use(
-  (
-    err: any,
-    _req: express.Request,
-    res: express.Response,
-    _next: express.NextFunction
-  ) => {
-    console.error("Global error:", err);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
-);
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📧 Make sure to configure your email settings in .env`);
+server.listen(PORT, () => {
+  console.log(`Server with queue system running on port ${PORT}`);
+  console.log(`Socket.io enabled for real-time updates`);
 });

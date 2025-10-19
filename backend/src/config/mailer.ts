@@ -83,4 +83,50 @@ export const sendVerificationEmail = async (
   }
 };
 
+export const sendDoctorCredentialsEmail = async (
+  email: string,
+  tempPassword: string,
+  fullName?: string
+): Promise<void> => {
+  const mailOptions = {
+    from: {
+      name: "MediTrack Admin",
+      address: process.env.EMAIL_USER!,
+    },
+    to: email,
+    subject: "Your MediTrack Doctor Account",
+    html: `
+      <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #dc2626; margin: 0;">MediTrack</h1>
+          <p style="color: #6b7280; margin: 5px 0;">Doctor Portal Access</p>
+        </div>
+        <div style="background: #f8fafc; padding: 30px; border-radius: 10px; border: 1px solid #e2e8f0;">
+          <h2 style="color: #1f2937; margin-top: 0;">Welcome${fullName ? `, ${fullName}` : ""}!</h2>
+          <p style="color: #4b5563; line-height: 1.6;">
+            Your doctor account has been created by the hospital administrator. Use the following credentials to sign in:
+          </p>
+          <div style="background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:16px; margin:16px 0;">
+            <p style="margin:0; color:#111827;"><strong>Username (email):</strong> ${email}</p>
+            <p style="margin:8px 0 0; color:#111827;"><strong>Temporary password:</strong> ${tempPassword}</p>
+          </div>
+          <p style="color:#6b7280; font-size:14px;">
+            For security, please sign in and change your password immediately.
+          </p>
+        </div>
+        <div style="text-align: center; margin-top: 30px; color: #9ca3af; font-size: 12px;">
+          <p>If you did not expect this account, please contact the administrator.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Doctor credentials email sent to ${email}`);
+  } catch (error) {
+    console.error("Error sending doctor credentials email:", error);
+  }
+};
+
 export default transporter;

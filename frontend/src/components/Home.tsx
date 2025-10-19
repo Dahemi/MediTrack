@@ -1,6 +1,6 @@
 import React from "react";
-import Navbar from "./Navbar";
-import HeroSection from "./HeroSection";
+import Navbar from "./user/Navbar";
+import HeroSection from "./user/HeroSection";
 
 const HomePage: React.FC = () => {
   return (
