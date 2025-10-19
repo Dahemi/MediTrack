@@ -540,7 +540,7 @@ export const getDoctorAppointmentsByDate = async (req: Request, res: Response) =
       date 
     })
       .sort({ queueNumber: 1 })
-      .select("_id patientName patientAddress patientContact time queueNumber status notes date");
+      .select("_id patientId patientName patientAddress patientContact time queueNumber status notes date");
 
     res.json({ success: true, appointments });
   } catch (error) {
@@ -560,7 +560,7 @@ export const getDoctorAppointments = async (req: Request, res: Response) => {
       doctorId: objectId
     })
       .sort({ date: -1, time: -1 })
-      .select("_id patientName patientAddress patientContact time queueNumber status notes date");
+      .select("_id patientId patientName patientAddress patientContact time queueNumber status notes date");
 
     res.json({ success: true, appointments });
   } catch (error) {

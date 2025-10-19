@@ -2,6 +2,10 @@ import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import appointmentRoutes from "./routes/appointment.routes.js";
 import patientRoutes from "./routes/patient.routes.js";
+import diagnosisRoutes from "./routes/diagnosis.routes.js";
+import doctorRoutes from "./routes/doctor.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
+import queueRoutes from "./routes/queue.routes.js";
 
 const app: Express = express();
 
@@ -11,6 +15,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "http://localhost:3000",
+      "http://localhost:5174",
       process.env.FRONTEND_URL || "http://localhost:5173",
     ],
     credentials: true,
@@ -21,8 +26,12 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use("/api/appointment", appointmentRoutes);
-
 app.use("/api/patient", patientRoutes);
+app.use("/api/diagnosis", diagnosisRoutes);
+app.use("/api/doctor", doctorRoutes);
+app.use("/api/doctors", doctorRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/queue", queueRoutes);
 
 // Health check
 app.get("/api/health", (_req, res) => {
